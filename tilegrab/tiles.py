@@ -3,7 +3,7 @@ import math
 from typing import List, Tuple
 import mercantile
 
-from Core import GeoDataset
+from tilegrab import GeoDataset
 
 
 class Tiles:

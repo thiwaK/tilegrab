@@ -7,12 +7,13 @@ from requests.adapters import HTTPAdapter, Retry
 from tqdm import tqdm
 from typing import Tuple
 
-from Core import TileSource
-from Core import Tiles
+from tilegrab import TileSource
+from tilegrab import Tiles
 
 
 @dataclass
 class Downloader:
+    tiles: Tiles
     tile_source: TileSource
     output_dir: str = "saved_tiles"
     session: Optional[requests.Session] = None
@@ -70,24 +71,23 @@ class Downloader:
         except Exception:
             raise RuntimeWarning(f"Failed to fetch {z}/{x}/{y}")
 
-    def start(
+    def run(
         self,
-        tiles: Tiles,
         workers: int = 8,
         show_progress: bool = True,
     ) -> Dict[str, bool]:
 
         results = {}
-        print(f"    - tile count: {len(tiles)}")
+        print(f"    - tile count: {len(self.tiles)}")
 
         if show_progress:
-            pbar = tqdm(total=len(tiles), desc=f"Downloading", unit="tile")
+            pbar = tqdm(total=len(self.tiles), desc=f"Downloading", unit="tile")
         else:
             pbar = None
 
         with ThreadPoolExecutor(max_workers=workers) as exe:
             future_to_tile = {
-                exe.submit(self.download_tile, tile.z, tile.x, tile.y): tile for tile in tiles.to_list
+                exe.submit(self.download_tile, tile.z, tile.x, tile.y): tile for tile in self.tiles.to_list
             }
             for fut in as_completed(future_to_tile):
                 z, x, y = future_to_tile[fut]

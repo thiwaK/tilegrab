@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tilegrab"
+version = "0.1.0"
+description = "Fast geospatial map tile downloader and mosaicker"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "Thiwa", email = "you@example.com"}]
+requires-python = ">=3.9"
+
+dependencies = [
+    "requests",
+    "mercantile",
+    "Pillow",
+    "tqdm"
+]
+
+[project.scripts]
+tilegrab = "tilegrab.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/thiwaK/tilegrab"

@@ -4,10 +4,10 @@ from typing import List
 from PIL import Image
 import re
 
-from Core.Tiles import Tiles
+from tilegrab import Tiles
 
 @dataclass
-class Moasic:
+class Mosaic:
     directory: Path | str = "saved_tiles"
     ext: str = ".png"
     recursive: bool = False
