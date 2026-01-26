@@ -1,11 +1,10 @@
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List
-from PIL import Image, ImageFile
-import numpy as np
+from PIL import Image
 import re
 
-from Core import Tiles
+from Core.Tiles import Tiles
 
 @dataclass
 class Moasic:
@@ -42,15 +41,10 @@ class Moasic:
         else:
             return [p for p in directory.glob(f"*{ext}") if p.is_file()]
     
-    def merge(self, tiles:Tiles, tile_size=256):
+    def merge(self, tiles:Tiles, tile_size: int=256):
         
-        max_x = [t.x  for t in tiles.to_list]
-        max_y = [t.y  for t in tiles.to_list]
-        max_x, min_x = max(max_x), min(max_x)
-        max_y, min_y = max(max_y), min(max_y)
-        
-        img_w = int((max_x - min_x + 1) * tile_size)
-        img_h = int((max_y - min_y + 1) * tile_size)
+        img_w = int((tiles.MAX_X - tiles.MIN_X + 1) * tile_size)
+        img_h = int((tiles.MAX_Y - tiles.MIN_Y + 1) * tile_size)
         print(f"Image size: {img_w}x{img_h}")
 
         merged_image = Image.new(
@@ -66,8 +60,8 @@ class Moasic:
             img = Image.open(img_path)
             img.load()
 
-            px = int((x - min_x) * tile_size)
-            py = int((y - min_y) * tile_size)
+            px = int((x - tiles.MIN_X) * tile_size)
+            py = int((y - tiles.MIN_Y) * tile_size)
 
             merged_image.paste(img, (px, py))
         

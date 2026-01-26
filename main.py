@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
 
-from Core import Downloader, GeoDataset, Moasic, Tiles
+from Core import Downloader, GeoDataset, Moasic
 from Core.TileSource import OSM, GoogleSat
+from Core.Tiles import TilesByBBox, TilesByShape
+
 
 
 if __name__ == "__main__":
 
-    zoom = 14
-    feature = GeoDataset(r"SHAPEFILE")
-    tiles = Tiles(feature, zoom)
+    zoom = 17
+    dataset = GeoDataset("SHAPEFILE")
+    tiles = TilesByShape(dataset, zoom)
     dl = Downloader(OSM())
 
     print(f"Downloading tiles...")
     print()
-    print(f"    - minX: {feature.bbox.minx:.4f}     - minY: {feature.bbox.miny:.4f}")
-    print(f"    - maxX: {feature.bbox.maxx:.4f}     - maxY: {feature.bbox.maxy:.4f}")
+    print(f"    - minX: {dataset.bbox.minx:.4f}     - minY: {dataset.bbox.miny:.4f}")
+    print(f"    - maxX: {dataset.bbox.maxx:.4f}     - maxY: {dataset.bbox.maxy:.4f}")
     print(f"    - zoom: {zoom}")
 
     result = dl.start(tiles, workers=8, show_progress=False)

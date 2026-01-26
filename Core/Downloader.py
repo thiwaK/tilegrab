@@ -1,4 +1,3 @@
-from io import BytesIO
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -7,7 +6,6 @@ import requests
 from requests.adapters import HTTPAdapter, Retry
 from tqdm import tqdm
 from typing import Tuple
-from PIL import Image
 
 from Core import TileSource
 from Core import Tiles
@@ -54,7 +52,7 @@ class Downloader:
         out_path = os.path.join(self.output_dir, f"{z}_{x}_{y}{ext}")
 
         try:
-            resp = self.session.get(url, headers=headers, timeout=self.REQUEST_TIMEOUT)
+            resp = self.session.get(url, headers=headers, timeout=self.REQUEST_TIMEOUT) # type: ignore
             resp.raise_for_status()
 
             if not (resp.headers.get("content-type", "").startswith("image")):
@@ -77,8 +75,6 @@ class Downloader:
         tiles: Tiles,
         workers: int = 8,
         show_progress: bool = True,
-        image_size:int = 256
-        
     ) -> Dict[str, bool]:
 
         results = {}
@@ -88,8 +84,6 @@ class Downloader:
             pbar = tqdm(total=len(tiles), desc=f"Downloading", unit="tile")
         else:
             pbar = None
-
-        
 
         with ThreadPoolExecutor(max_workers=workers) as exe:
             future_to_tile = {
@@ -111,7 +105,6 @@ class Downloader:
             pbar.close()
             
         return results
-
 
     def _save(self, img, path):
 
