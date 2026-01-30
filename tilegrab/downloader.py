@@ -7,8 +7,8 @@ from requests.adapters import HTTPAdapter, Retry
 from tqdm import tqdm
 from typing import Tuple
 
-from tilegrab import TileSource
-from tilegrab import Tiles
+from tilegrab.sources import TileSource
+from tilegrab.tiles import Tiles
 
 
 @dataclass

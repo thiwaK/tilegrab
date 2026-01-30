@@ -3,6 +3,7 @@ from typing import Dict, Optional
 
 class TileSource:
     URL_TEMPLATE = ""
+    name = None
 
     def __init__(
         self, 
@@ -27,19 +28,24 @@ class TileSource:
 
 
 class GoogleSat(TileSource):
-    NAME = "GoogleSat"
+    name = "GoogleSat"
+    description = "Google satellite imageries"
     URL_TEMPLATE = "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
+    
 
 class OSM(TileSource):
-    NAME = "OSM"
+    name = "OSM"
+    description = "OpenStreetMap imageries"
     URL_TEMPLATE = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
 
 class ESRIWorldImagery(TileSource):
-    NAME = "ESRIWorldImagery"
+    name = "ESRIWorldImagery"
+    description = "ESRI satellite imageries"
     URL_TEMPLATE = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
 
 class Nearmap(TileSource):
-    NAME = "NearmapSat"
+    name = "NearmapSat"
+    description = "Nearmap satellite imageries"
     URL_TEMPLATE = "https://api.nearmap.com/tiles/v3/Vert/{z}/{x}/{y}.png?apikey={token}"
 
     def get_url(self, z: int, x: int, y: int) -> str:

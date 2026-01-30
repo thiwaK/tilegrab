@@ -7,15 +7,26 @@ name = "tilegrab"
 version = "0.1.0"
 description = "Fast geospatial map tile downloader and mosaicker"
 readme = "README.md"
-license = {text = "MIT"}
-authors = [{name = "Thiwa", email = "you@example.com"}]
+authors = [{name = "Thiwa", email = "thiwanka.munasinghe@hotmail.com"}]
 requires-python = ">=3.9"
+license = "MIT"
+license-files = ["LICENSE"]
 
 dependencies = [
     "requests",
     "mercantile",
     "Pillow",
-    "tqdm"
+    "tqdm",
+    "Box",
+    "geopandas",
+    "pyproj",
+    "shapely"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-mock"
 ]
 
 [project.scripts]

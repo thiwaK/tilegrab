@@ -12,6 +12,9 @@ class GeoDataset:
     @property
     def shape(self):
         return self.source.geometry
+    
+    def buffer(self, distance:int) -> None:
+        self.source.geometry.buffer(distance)
 
     def __init__(self, source_path: Path | str):
         import geopandas as gpd
