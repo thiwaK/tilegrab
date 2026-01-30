@@ -1,36 +1,60 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
+requires = [
+    "setuptools>=77",
+    "setuptools-scm[toml]>=6.2.3",
+]
 
 [project]
 name = "tilegrab"
-version = "0.1.0"
+version = "1.0.0"
 description = "Fast geospatial map tile downloader and mosaicker"
 readme = "README.md"
-authors = [{name = "Thiwa", email = "thiwanka.munasinghe@hotmail.com"}]
+authors = [
+    {name = "Thiwanka Munasinghe"}
+]
 requires-python = ">=3.9"
 license = "MIT"
 license-files = ["LICENSE"]
+keywords = [
+    "tilegrab",
+    "geotilegrab",
+    "maptilegrab",
+    "maptilemosaic",
+    "maptiledownload",
+]
 
 dependencies = [
     "requests",
     "mercantile",
-    "Pillow",
+    "pillow",
     "tqdm",
-    "Box",
+    "python-box",
     "geopandas",
     "pyproj",
-    "shapely"
+    "shapely",
+    "pytest"
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest",
-    "pytest-mock"
+    "pytest-mock",
+    "setuptools",
+    "mock",
 ]
 
 [project.scripts]
 tilegrab = "tilegrab.cli:main"
 
-[project.urls]
-Homepage = "https://github.com/thiwaK/tilegrab"
+urls.Changelog = "https://github.com/thiwaK/tilegrab"
+urls.Contact = "https://github.com/thiwaK"
+urls.Homepage = "https://github.com/thiwaK/tilegrab"
+urls.Source = "https://github.com/thiwaK/tilegrab"
+urls.Tracker = "https://github.com/thiwaK/tilegrab/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+target-version = [ "py310", "py311", "py312", "py313" ]
