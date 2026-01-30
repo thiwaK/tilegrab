@@ -1,5 +1,6 @@
 from pathlib import Path
 from box import Box
+from typing import Union
 
 class GeoDataset:
 
@@ -16,7 +17,7 @@ class GeoDataset:
     def buffer(self, distance:int) -> None:
         self.source.geometry.buffer(distance)
 
-    def __init__(self, source_path: Path | str):
+    def __init__(self, source_path: Union[Path, str]):
         import geopandas as gpd
         from pyproj import CRS
 

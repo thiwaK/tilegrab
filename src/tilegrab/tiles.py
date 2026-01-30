@@ -3,7 +3,7 @@ import math
 from typing import List, Optional, Tuple
 import mercantile
 from abc import ABC, abstractmethod
-
+from typing import Union
 from .dataset import GeoDataset
 
 
@@ -13,7 +13,7 @@ class Tiles(ABC):
     MAX_X: int = 0
     MIN_Y: int = 0
     MAX_Y: int = 0
-    _cache: List[Box] | None = None
+    _cache: Union[List[Box], None] = None
 
     @abstractmethod
     def _build_tile_cache(self) -> list[Box]:
