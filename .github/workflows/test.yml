@@ -1,34 +1,171 @@
-name: Test Module
+name: tests
 
-on: [push]
+on:
+  push:
+    branches: [main]
+    tags:
+      - "v*.*.*"
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PYTEST_ADDOPTS: "--color=yes"
 
 jobs:
-  build-linux:
+  package:
+    name: Build package
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build & inspect package
+        uses: hynek/build-and-inspect-python-package@v2
+
+  test-ubuntu:
+    name: Ubuntu (py${{ matrix.python }})
+    needs: package
+    runs-on: ubuntu-latest
+
     strategy:
-      max-parallel: 5
+      fail-fast: false
+      matrix:
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v3
-      with:
-        python-version: '3.10'
-    - name: Add conda to system path
-      run: |
-        # $CONDA is an environment variable pointing to the root of the miniconda directory
-        echo $CONDA/bin >> $GITHUB_PATH
-    - name: Install dependencies
-      run: |
-        conda env update --file environment.yml --name base
-    - name: Lint with flake8
-      run: |
-        conda install flake8
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test with pytest
-      run: |
-        conda install pytest
-        python -m unittest discover tests
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: Packages
+          path: dist
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          allow-prereleases: true
+
+      - name: Install test tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install tox
+
+      - name: Run tests
+        run: |
+          tox run -e py --installpkg dist/*.tar.gz
+
+  test-windows:
+    name: Windows (py${{ matrix.python }})
+    needs: package
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: Packages
+          path: dist
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          allow-prereleases: true
+
+      - name: Install test tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install tox
+
+      - name: Run tests
+        run: |
+          tox run -e py --installpkg dist/*.tar.gz
+
+  test-macos:
+    name: macOS (py${{ matrix.python }})
+    needs: package
+    runs-on: macos-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: Packages
+          path: dist
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          allow-prereleases: true
+
+      - name: Install test tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install tox
+
+      - name: Run tests
+        run: |
+          tox run -e py --installpkg dist/*.tar.gz
+
+  coverage:
+    name: Coverage (Ubuntu py3.12)
+    needs: package
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: Packages
+          path: dist
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install tox
+
+      - name: Run coverage
+        run: |
+          tox run -e py-coverage --installpkg dist/*.tar.gz
+
+      - uses: codecov/codecov-action@v4
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false
+
+  check:
+    name: Required status check
+    if: always()
+    needs:
+      - test-ubuntu
+      - test-windows
+      - test-macos
+      - coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: re-actors/alls-green@v1
+        with:
+          jobs: ${{ toJSON(needs) }}
