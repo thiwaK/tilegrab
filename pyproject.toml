@@ -47,11 +47,12 @@ dev = [
 [project.scripts]
 tilegrab = "tilegrab.cli:main"
 
-urls.Changelog = "https://github.com/thiwaK/tilegrab"
-urls.Contact = "https://github.com/thiwaK"
-urls.Homepage = "https://github.com/thiwaK/tilegrab"
-urls.Source = "https://github.com/thiwaK/tilegrab"
-urls.Tracker = "https://github.com/thiwaK/tilegrab/issues"
+[project.urls]
+Changelog = "https://github.com/thiwaK/tilegrab"
+Contact = "https://github.com/thiwaK"
+Homepage = "https://github.com/thiwaK/tilegrab"
+Source = "https://github.com/thiwaK/tilegrab"
+Tracker = "https://github.com/thiwaK/tilegrab/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
