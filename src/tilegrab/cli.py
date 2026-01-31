@@ -12,13 +12,13 @@ def parse_args() -> argparse.Namespace:
     extent_group = p.add_mutually_exclusive_group(required=True)
     extent_group.add_argument(
         "--shape",
-        nargs=1,
+        nargs=0,
         type=bool,
         help="Use actual shape to derive tiles"
     )
     extent_group.add_argument(
         "--bbox",
-        nargs=1,
+        nargs=0,
         type=bool,
         help="Use shape's bbox to derive tiles"
     )
