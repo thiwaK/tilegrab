@@ -59,7 +59,7 @@ jobs:
 
       - name: Run tests
         run: |
-          tox run -e py --installpkg dist/*.tar.gz
+          tox run -e py
 
   test-windows:
     name: Windows (py${{ matrix.python }})
@@ -91,7 +91,7 @@ jobs:
 
       - name: Run tests
         run: |
-          tox run -e py --installpkg dist/*.tar.gz
+          tox run -e py
 
   test-macos:
     name: macOS (py${{ matrix.python }})
@@ -123,7 +123,7 @@ jobs:
 
       - name: Run tests
         run: |
-          tox run -e py --installpkg dist/*.tar.gz
+          tox run -e py
 
   coverage:
     name: Coverage (Ubuntu py3.12)
@@ -149,7 +149,7 @@ jobs:
 
       - name: Run coverage
         run: |
-          tox run -e py-coverage --installpkg dist/*.tar.gz
+          tox run -e py-coverage
 
       - uses: codecov/codecov-action@v4
         with:
