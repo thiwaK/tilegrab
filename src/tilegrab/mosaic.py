@@ -18,6 +18,8 @@ class Mosaic:
         self.recursive = recursive
 
         self.image_col = self._get_images()
+        assert len(self.image_col) > 0
+
         pat = re.compile(
             r"^([0-9]+)_([0-9]+)_([0-9]+)\.[A-Za-z0-9]+$"
         )
@@ -31,8 +33,9 @@ class Mosaic:
                 third = m.group(3)
 
                 self.image_data[i] = [int(second), int(third), int(first)]
-        
+        assert len(self.image_data.keys()) > 0 and len(self.image_col) == len(self.image_data.keys())
 
+        print(f"Processing {len(self.image_data.keys())} tiles...")
 
     def _get_images(self) -> List[Path]:
 
@@ -49,6 +52,8 @@ class Mosaic:
 
     def merge(self, tiles: Tiles, tile_size: int = 256):
 
+        print(f"{tiles.MAX_X}, {tiles.MIN_X}")
+        print(f"{tiles.MAX_Y}, {tiles.MIN_Y}")
         img_w = int((tiles.MAX_X - tiles.MIN_X + 1) * tile_size)
         img_h = int((tiles.MAX_Y - tiles.MIN_Y + 1) * tile_size)
         print(f"Image size: {img_w}x{img_h}")
@@ -58,7 +63,7 @@ class Mosaic:
         for img_path, img_id in self.image_data.items():
             x, y, _ = img_id
 
-            # print(x - min_x + 1, "x" ,y - min_y + 1)
+            print(x - img_w + 1, "x" ,y - img_h + 1)
 
             img = Image.open(img_path)
             img.load()
@@ -68,4 +73,4 @@ class Mosaic:
 
             merged_image.paste(img, (px, py))
 
-        merged_image.save("merged_output.png")
+        merged_image.save(os.path.join(self.directory, "merged_output.png"))
