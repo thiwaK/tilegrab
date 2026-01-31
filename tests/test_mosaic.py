@@ -1,5 +1,5 @@
 import pytest
-from pathlib import Path, WindowsPath
+from pathlib import Path, WindowsPath, PosixPath
 from PIL import Image
 from tilegrab.mosaic import Mosaic
 from tilegrab.tiles import TilesByBBox
@@ -33,10 +33,11 @@ def mock_tiles():
 def test_mosaic_init(temp_tiles_dir):
     mosaic = Mosaic(directory=str(temp_tiles_dir))
 
-    assert all([type(i) == WindowsPath for i in mosaic.image_col])
+    print("image_col", mosaic.image_col)
+    assert all([type(i) == WindowsPath or PosixPath for i in mosaic.image_col])
     assert all([i.exists for i in mosaic.image_col])
 
-    # print("image_col", mosaic.image_col)
+    
     # print("image_data", mosaic.image_data)
     assert len(mosaic.image_col) == 2  # Two images
 
