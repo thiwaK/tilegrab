@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List
 from PIL import Image
 import re
+import os
 
 from tilegrab.tiles import Tiles
 
@@ -16,22 +17,22 @@ class Mosaic:
         self.ext = ext
         self.recursive = recursive
 
-        pat = re.compile(
-            r"^[A-Za-z0-9]+_[A-Za-z0-9]+\\([1-9]+)_([0-9]+)_([0-9]+)\.[A-Za-z0-9]+$"
-        )
         self.image_col = self._get_images()
-        image_data = {}
+        pat = re.compile(
+            r"^([0-9]+)_([0-9]+)_([0-9]+)\.[A-Za-z0-9]+$"
+        )
+        self.image_data = {}
 
         for i in self.image_col:
-            m = pat.match(str(i))
+            m = pat.match(os.path.basename(str(i)))
             if m:
                 first = m.group(1)
                 second = m.group(2)
                 third = m.group(3)
 
-                image_data[i] = [int(second), int(third), int(first)]
+                self.image_data[i] = [int(second), int(third), int(first)]
+        
 
-        self.image_data = image_data
 
     def _get_images(self) -> List[Path]:
 

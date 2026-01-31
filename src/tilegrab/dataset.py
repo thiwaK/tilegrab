@@ -23,18 +23,20 @@ class GeoDataset:
 
         source_path = Path(source_path)
         gdf = gpd.read_file(source_path)
-        current_epsg = None
+        epsg = None
 
         if gdf.crs is not None:
             try:
-                current_epsg = CRS.from_user_input(gdf.crs).to_epsg()
+                epsg = CRS.from_user_input(gdf.crs).to_epsg()
             except Exception:
                 raise RuntimeError("Unable to get CRS from the dataset")
         else:
             raise RuntimeError("Missing CRS")
 
-        if current_epsg != 4326:
+        if epsg != 4326:
             gdf = gdf.to_crs(epsg=4326)
 
+        self.original_epsg = epsg
+        self.current_epsg = 4326
         self.source = gdf
         self.source_path = source_path

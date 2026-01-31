@@ -2,7 +2,11 @@ import pytest
 from unittest.mock import Mock, patch
 from box import Box
 from tilegrab.dataset import GeoDataset
+from pathlib import Path
+import os
 
+DATA_PATH = r"tests\data\T.geojson"
+assert os.path.isfile(DATA_PATH)
 
 @patch('geopandas.read_file')
 @patch('pyproj.CRS.from_user_input')

@@ -12,7 +12,6 @@ def mock_geodataset_bbox():
     mock_ds.bbox = Box({"minx": -122.5, "miny": 37.7, "maxx": -122.3, "maxy": 37.9})
     return mock_ds
 
-
 @pytest.fixture
 def mock_geodataset_shape():
     """Mock GeoDataset for shape-based tiles."""
@@ -32,7 +31,6 @@ def test_tiles_by_shape_creation(mock_geodataset_shape):
     tiles = TilesByShape(mock_geodataset_shape, zoom=10)
     assert tiles.zoom == 10
     assert tiles.feature == mock_geodataset_shape
-
 
 def test_tiles_by_bbox_to_list(mock_geodataset_bbox):
     tiles = TilesByBBox(mock_geodataset_bbox, zoom=10)
@@ -56,6 +54,12 @@ def test_tiles_by_shape_to_list(mock_geodataset_shape):
         assert 'y' in tile
         assert tile.z == 10
 
+def test_safe_limit_exceeded():
+    # Mock a large bbox to exceed limit
+    mock_ds = Mock(spec=GeoDataset)
+    mock_ds.bbox = Box({"minx": -180, "miny": -90, "maxx": 180, "maxy": 90})  # World bbox
+    with pytest.raises(ValueError, match="Your query excedes the hard limit.*"):
+        tiles = TilesByBBox(mock_ds, zoom=5, SAFE_LIMIT=1) 
 
 def test_tiles_len(mock_geodataset_bbox):
     tiles = TilesByBBox(mock_geodataset_bbox, zoom=10)
@@ -70,10 +74,3 @@ def test_tiles_iter(mock_geodataset_bbox):
     assert count == len(tiles)
 
 
-def test_safe_limit_exceeded(mock_geodataset_bbox):
-    # Mock a large bbox to exceed limit
-    mock_ds = Mock(spec=GeoDataset)
-    mock_ds.bbox = Box({"minx": -180, "miny": -90, "maxx": 180, "maxy": 90})  # World bbox
-    tiles = TilesByBBox(mock_ds, zoom=1, SAFE_LIMIT=1)  # Low limit
-    with pytest.raises(ValueError, match="Too many tiles"):
-        _ = tiles.to_list
