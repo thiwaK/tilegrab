@@ -36,7 +36,8 @@ class Tiles(ABC):
         assert feature.bbox.miny < feature.bbox.maxy
 
         self._build_tile_cache()
-
+        self._update_min_max()
+        
         if len(self) > SAFE_LIMIT:
             raise ValueError(
                 f"Your query excedes the hard limit {len(self)} > {SAFE_LIMIT}"

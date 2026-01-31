@@ -33,7 +33,8 @@ class Mosaic:
                 third = m.group(3)
 
                 self.image_data[i] = [int(second), int(third), int(first)]
-        assert len(self.image_data.keys()) > 0 and len(self.image_col) == len(self.image_data.keys())
+
+        assert len(self.image_data.keys()) > 0
 
         print(f"Processing {len(self.image_data.keys())} tiles...")
 
@@ -52,8 +53,6 @@ class Mosaic:
 
     def merge(self, tiles: Tiles, tile_size: int = 256):
 
-        print(f"{tiles.MAX_X}, {tiles.MIN_X}")
-        print(f"{tiles.MAX_Y}, {tiles.MIN_Y}")
         img_w = int((tiles.MAX_X - tiles.MIN_X + 1) * tile_size)
         img_h = int((tiles.MAX_Y - tiles.MIN_Y + 1) * tile_size)
         print(f"Image size: {img_w}x{img_h}")
@@ -63,7 +62,7 @@ class Mosaic:
         for img_path, img_id in self.image_data.items():
             x, y, _ = img_id
 
-            print(x - img_w + 1, "x" ,y - img_h + 1)
+            print(x - tiles.MIN_X + 1, "x" ,y - tiles.MIN_Y + 1)
 
             img = Image.open(img_path)
             img.load()

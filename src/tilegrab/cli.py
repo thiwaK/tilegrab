@@ -60,6 +60,11 @@ def parse_args() -> argparse.Namespace:
         help="Only download tiles; do not run mosaicking or postprocessing",
     )
     p.add_argument(
+        "--mosaic-only",
+        action="store_true",
+        help="Only mosaic tiles; do not download",
+    )
+    p.add_argument(
         "--no-progress", action="store_false", help="Hide download progress bar"
     )
     p.add_argument(
@@ -101,10 +106,11 @@ def main():
     else:
         raise SystemExit("No tile source selected")
 
-    downloader = Downloader(tiles, source, args.out)
-    result = downloader.run(show_progress=args.no_progress)
-    success = sum(1 for v in result.values() if v)
-    print(f"Download completed: {success}/{len(tiles)} successful.")
+    if not (args.mosaic_only):
+        downloader = Downloader(tiles, source, args.out)
+        result = downloader.run(show_progress=args.no_progress)
+        success = sum(1 for v in result.values() if v)
+        print(f"Download completed: {success}/{len(tiles)} successful.")
 
     if args.download_only:
         exit()
