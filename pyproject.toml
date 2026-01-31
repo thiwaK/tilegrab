@@ -18,10 +18,9 @@ license = "MIT"
 license-files = ["LICENSE"]
 keywords = [
     "tilegrab",
-    "geotilegrab",
-    "maptilegrab",
-    "maptilemosaic",
-    "maptiledownload",
+    "Tilegrab",
+    "TileGrab",
+    "tileGrab",
 ]
 
 dependencies = [
