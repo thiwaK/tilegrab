@@ -195,15 +195,15 @@ No registration. No plugin system. No magic.
 
 ---
 
-### Example: Custom OpenStreetMap Source
+### Example
 
 ```python
 from tilegrab.sources import TileSource
 
-class OSM(TileSource):
-    name = "OSM"
-    description = "OpenStreetMap imageries"
-    URL_TEMPLATE = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+class MyCustomSource(TileSource):
+    name = "MyCustomSource name"
+    description = "MyCustomSource description"
+    URL_TEMPLATE = "https://MyCustomSource/{z}/{x}/{y}.png"
 ```
 
 That’s it.
@@ -211,6 +211,17 @@ That’s it.
 Once instantiated, the source works exactly like built-in providers.
 
 ---
+
+
+### get_url Function
+
+You can change how the url is generate by override `get_url` function, inside your Custom Tile Sources. If you are planning to use API key, you must override this function.
+
+```python
+def get_url(self, z: int, x: int, y: int) -> str:
+  assert self.api_key
+  return self.URL_TEMPLATE.format(x=x, y=y, z=z, token=self.api_key)
+```
 
 ### URL Template Rules
 
@@ -229,7 +240,7 @@ Example templates:
 ```text
 https://server/{z}/{x}/{y}.png
 https://tiles.example.com/{z}/{x}/{y}.jpg
-https://api.provider.com/tiles/{z}/{x}/{y}?key=API_KEY
+https://api.provider.com/tiles/{z}/{x}/{y}?key={token}
 ```
 
 ---
@@ -245,6 +256,7 @@ source = MyCustomSource(api_key="YOUR_KEY")
 `TileSource` already handles key injection — you don’t need to reinvent it.
 
 ---
+
 
 ### Using a Custom Source in Code
 
