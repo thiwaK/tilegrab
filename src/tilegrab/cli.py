@@ -109,8 +109,7 @@ def main():
     if not (args.mosaic_only):
         downloader = Downloader(tiles, source, args.out)
         result = downloader.run(show_progress=args.no_progress)
-        success = sum(1 for v in result.values() if v)
-        print(f"Download completed: {success}/{len(tiles)} successful.")
+
 
     if args.download_only:
         exit()

@@ -106,6 +106,11 @@ class Downloader:
             
         return results
 
+    def _evaluate_result(self, result):
+        success = sum(1 for v in result.values() if v)
+        print(f"Download completed: {success}/{len(self.tiles)} successful.")
+
+
     def _save(self, img, path):
 
         if os.path.exists(path) and os.path.getsize(path) == 0:
