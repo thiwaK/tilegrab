@@ -14,6 +14,16 @@ class GeoDataset:
     def shape(self):
         return self.source.geometry
     
+    @property
+    def x_extent(self):
+        minx, maxx = self.source.total_bounds
+        return (maxx - minx) + 1
+
+    @property
+    def y_extent(self):
+        miny, maxy = self.source.total_bounds
+        return (maxy - miny) + 1
+
     def buffer(self, distance:int) -> None:
         self.source.geometry.buffer(distance)
 

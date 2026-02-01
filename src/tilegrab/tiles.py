@@ -69,14 +69,6 @@ class Tiles(ABC):
         assert self._cache
         return self._cache
 
-    @property
-    def x_extent(self):
-        return (self.feature.bbox.maxx - self.feature.bbox.minx) + 1
-
-    @property
-    def y_extent(self):
-        return (self.feature.bbox.maxy - self.feature.bbox.miny) + 1
-
     def _update_min_max(self):
         assert self._cache
         x = [t.x  for t in self._cache]
