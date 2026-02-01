@@ -20,6 +20,15 @@
 
 ---
 
+<!-- <p align="center">
+  <picture align="center">
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/astral-sh/uv/assets/1309177/03aa9163-1c79-4a87-a31d-7a9311ed9310">
+    <source media="(prefers-color-scheme: light)" srcset="https://github.com/astral-sh/uv/assets/1309177/629e59c0-9c6e-4013-9ad4-adb2bcf5080d">
+    <img alt="Shows a bar chart with benchmark results." src="https://github.com/astral-sh/uv/assets/1309177/629e59c0-9c6e-4013-9ad4-adb2bcf5080d">
+  </picture>
+</p> -->
+
+
 ## Why tilegrab?
 
 Most tile downloaders fall into one of two traps:
@@ -94,8 +103,7 @@ tilegrab \
 ## CLI Usage
 
 ```bash
-usage: tilegrab [-h] --source SOURCE (--shape | --bbox) (--osm | --google_sat | --esri_sat | --key KEY) --zoom ZOOM
-                [--out OUT] [--download-only] [--mosaic-only] [--no-progress] [--quiet]
+usage: tilegrab [-h] --source SOURCE (--shape | --bbox) (--osm | --google_sat | --esri_sat | --key KEY) --zoom ZOOM [--out OUT] [--download-only] [--mosaic-only] [--no-progress] [--quiet]
 
 Download and mosaic map tiles
 
@@ -113,7 +121,7 @@ Source options(Extent):
 
   --source SOURCE  The vector polygon source for filter tiles
   --shape          Use actual shape to derive tiles
-  --bbox           Use shape's bbox to derive tiles
+  --bbox           Use shape's bounding box to derive tiles
 
 Source options(Map tiles):
   Options for the map tile source
@@ -125,7 +133,7 @@ Source options(Map tiles):
 ```
 
 ---
-
+<!-- 
 ## Required Arguments
 
 | Argument   | Description                               |
@@ -163,7 +171,8 @@ Optional API key:
 | `--no-progress`   | Disable progress bar                        |
 | `--quiet`         | Suppress console output                     |
 
----
+--- 
+-->
 
 ## Supported Vector Formats
 
