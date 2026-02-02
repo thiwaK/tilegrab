@@ -5,6 +5,7 @@ import random
 import sys
 from pathlib import Path
 from tilegrab.downloader import Downloader
+from tilegrab.images import TileImageCollection
 from tilegrab.tiles import TilesByShape, TilesByBBox
 from tilegrab.dataset import GeoDataset
 from tilegrab import version
@@ -48,12 +49,12 @@ class LogFormatter(logging.Formatter):
     NAME_WIDTH = 14
 
     LEVEL_MAP = {
-        logging.CRITICAL: f'{RED}‼{RESET}',
-        logging.ERROR:    f'{RED}✖{RESET}',
-        logging.WARNING:  f'{YELLOW}⚠{RESET}',
-        logging.INFO:     f'{BLUE}•{RESET}',
-        logging.DEBUG:    f'{GRAY}·{RESET}',
-        logging.NOTSET:   f'{CYAN}-{RESET}',
+        logging.CRITICAL: f'{RED}‼ {RESET}',
+        logging.ERROR:    f'{RED}✖ {RESET}',
+        logging.WARNING:  f'{YELLOW}⚠ {RESET}',
+        logging.INFO:     f'{BLUE}• {RESET}',
+        logging.DEBUG:    f'{GRAY}· {RESET}',
+        logging.NOTSET:   f'{CYAN}- {RESET}',
     }
 
     def format(self, record):
@@ -153,6 +154,9 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--debug", action="store_true", help="Enable debug logging"
     )
+    p.add_argument(
+        "--test", action="store_true", help="Only for testing purposes, not for normal use"
+    )
 
     return p.parse_args()
 
@@ -165,7 +169,8 @@ def main():
         logging.getLogger().setLevel(logging.DEBUG)
         # logger.debug("Debug logging enabled")
     elif args.quiet:
-        logging.getLogger().setLevel(logging.WARNING)
+        console.close()
+        
     
     
     BANNER_NORMAL, BANNER_BRIGHT = random.choice([
@@ -178,10 +183,11 @@ def main():
         (GRAY, BGRAY),
     ])
 
-    print()
-    print(f"{WHITE}   " + ("-" * 60) + f"{RESET}")
-    print(f"{BWHITE}  TileGrab v{version}{RESET}".rjust(50))
-    print(f"{WHITE}   " + ("-" * 60) + f"{RESET}")
+    if not args.quiet:
+        print()
+        print(f"{WHITE}   " + ("-" * 60) + f"{RESET}")
+        print(f"{BWHITE}  TileGrab v{version}{RESET}".rjust(50))
+        print(f"{WHITE}   " + ("-" * 60) + f"{RESET}")
     
     try:
         dataset = GeoDataset(args.source)
@@ -217,14 +223,18 @@ def main():
         else:
             logger.error("No tile source selected")
             raise SystemExit("No tile source selected")
-
-        # downloader = Downloader(tiles, source, args.out)
-        # result = downloader.run(show_progress=args.no_progress)
-
-        # logger.info(f"Download result: {result}")
-        # result.mosaic()
         
+        downloader = Downloader(tiles, source, args.out)
+        result: TileImageCollection
 
+        if args.mosaic_only:
+            result = TileImageCollection(args.out)
+            result.load(tiles)  
+        else:
+            result = downloader.run(show_progress=args.no_progress)
+            logger.info(f"Download result: {result}")
+        
+        if not args.download_only: result.mosaic()
         logger.info("Done")
 
         

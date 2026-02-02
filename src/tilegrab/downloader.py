@@ -12,6 +12,7 @@ from pathlib import Path
 from tilegrab.sources import TileSource
 from tilegrab.tiles import TileCollection, Tile
 from tilegrab.images import TileImageCollection, TileImage
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 

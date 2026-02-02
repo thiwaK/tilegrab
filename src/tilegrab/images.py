@@ -2,6 +2,7 @@ import logging
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path, PosixPath, WindowsPath
+import re
 from typing import Any, List, Optional, Tuple, Union
 from PIL import Image as PLIImage
 from box import Box
@@ -137,6 +138,31 @@ class TileImageCollection:
     width: int = 0
     height: int = 0
 
+    def load(self, tile_collection:TileCollection):
+        logger.info("Start loading saved ImageTiles")
+        pat = re.compile(r'^([0-9]+)_([0-9]+)_([0-9]+)\.[A-Za-z0-9]+$')
+        image_col = [p for p in self.path.glob(f"*.*") if p.is_file()]
+
+        for tile in tile_collection.to_list:
+            found_matching_image = False
+            for image_path in image_col:
+                m = pat.match(str(image_path.name))
+                if m:
+                    z = int(m.group(1))
+                    x = int(m.group(2))
+                    y = int(m.group(3))
+
+                    if tile.x == x and tile.y == y and tile.z == z:
+                        logger.debug(f"Processing ImageTile x={x} y={y} z={z}")
+                        with open(image_path, 'rb') as f:
+                            tile_image = TileImage(tile, f.read())
+                            tile_image.path = image_path
+                            self.images.append(tile_image)
+                            found_matching_image = True
+                            continue
+
+            if not found_matching_image: logger.warning(f"Missing ImageTile x={tile.x} y={tile.y} z={tile.z}")
+        
     def append(self, img: TileImage):
         img.path = os.path.join(self.path, img.name)
         self.images.append(img)

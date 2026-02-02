@@ -20,10 +20,10 @@ class Tile:
         self._position = None
         logger.debug(f"Tile created: z={self.z}, x={self.x}, y={self.y}")
 
-    @classmethod
-    def from_tuple(cls, t: tuple[int, int, int]) -> "Tile":
-        logger.debug(f"Creating Tile from tuple: {t}")
-        return cls(*t)
+    # @classmethod
+    # def from_tuple(cls, t: tuple[int, int, int]) -> "Tile":
+    #     logger.debug(f"Creating Tile from tuple: {t}")
+    #     return cls(*t)
     
     @property
     def url(self) -> Union[str, None]:
