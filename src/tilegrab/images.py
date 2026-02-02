@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path, PosixPath, WindowsPath
 import re
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, List, Union
 from PIL import Image as PLIImage
 from box import Box
 from tilegrab.tiles import Tile, TileCollection
@@ -132,11 +132,23 @@ class TileImage:
     def url(self) -> Union[str, None]:
         return self._tile.url
 
-
+WEB_MERCATOR_EXTENT = 20037508.342789244
 class TileImageCollection:
     images: List[TileImage] = []
     width: int = 0
     height: int = 0
+
+    def mosaic_bounds(self, x_min, y_min, x_max, y_max, z):
+        n = 2 ** z
+        tile_size_m = 2 * WEB_MERCATOR_EXTENT / n
+
+        xmin = (WEB_MERCATOR_EXTENT*-1) + x_min * tile_size_m
+        xmax = (WEB_MERCATOR_EXTENT*-1) + (x_max + 1) * tile_size_m
+
+        ymax = WEB_MERCATOR_EXTENT - y_min * tile_size_m
+        ymin = WEB_MERCATOR_EXTENT - (y_max + 1) * tile_size_m
+
+        return xmin, ymin, xmax, ymax
 
     def load(self, tile_collection:TileCollection):
         logger.info("Start loading saved ImageTiles")
@@ -195,9 +207,12 @@ class TileImageCollection:
 
         self.width = int((maxx - minx + 1) * self.images[0].width)
         self.height = int((maxy - miny + 1) * self.images[0].height)
+        self.minx, self.maxx = minx, maxx
+        self.miny, self.maxy = miny, maxy
+
         logger.info(f"Collection dimensions calculated: {self.width}x{self.height}")
 
-    def mosaic(self):
+    def mosaic(self, tiff:bool=True, png:bool=False):
         logger.info("Starting mosaic creation")
         self._update_collection_dim()
 
@@ -210,9 +225,44 @@ class TileImageCollection:
             logger.debug(f"Pasting image at position ({px}, {py}): {image.name}")
             merged_image.paste(image.image, (px, py))
 
-        output_path = "merged_output.png"
-        merged_image.save(output_path)
-        logger.info(f"Mosaic saved to {output_path}")
+        # TODO: fix this monkey patch
+        if tiff:
+            output_path = "mosaic.tiff"
+            import numpy as np
+            from rasterio.transform import from_bounds
+            import rasterio
+            
+            data = np.array(merged_image)
+            data = data.transpose(2, 0, 1)
+
+            width_px, height_px = merged_image.size
+            xmin, ymin, xmax, ymax = self.mosaic_bounds(
+                self.minx, self.miny, self.maxx, self.maxy, self.images[0].tile.z
+            )
+
+            transform = from_bounds(
+                xmin, ymin, xmax, ymax,
+                width_px, height_px
+            )
+
+            with rasterio.open(
+                output_path,
+                "w",
+                driver="GTiff",
+                height=height_px,
+                width=width_px,
+                count=data.shape[0],
+                dtype=data.dtype,
+                crs="EPSG:3857",
+                transform=transform,
+            ) as dst:
+                dst.write(data)
+
+            logger.info(f"Mosaic saved to {output_path}")
+        if png:
+            output_path = "mosaic.png"
+            merged_image.save(output_path)
+            logger.info(f"Mosaic saved to {output_path}")
 
     def export_collection(self, type: ExportType):
         logger.info(f"Exporting collection as type {type}")

@@ -52,13 +52,22 @@ def parse_args() -> argparse.Namespace:
         "--key", type=str, default=None, help="API key where required by source"
     )
 
+    # Create a named group for merged output format
+    mosaic_out_group = p.add_argument_group(
+        title="Mosaic export formats", description="Formats for the output mosaic image"
+    )
+    mosaic_group = mosaic_out_group.add_mutually_exclusive_group(required=True)
+    mosaic_group.add_argument("--jpg", action="store_true", help="JPG image; no geo-reference")
+    mosaic_group.add_argument("--png", action="store_true", help="PNG image; no geo-reference")
+    mosaic_group.add_argument("--tiff", action="store_true", help="GeoTiff image; with geo-reference")
+
     # other options
     p.add_argument("--zoom", type=int, required=True, help="Zoom level (integer)")
     p.add_argument(
-        "--out",
+        "--tiles-out",
         type=Path,
         default=Path.cwd() / "saved_tiles",
-        help="Output directory (default: ./saved_tiles)",
+        help="Output directory for downloaded tiles (default: ./saved_tiles)",
     )
     p.add_argument(
         "--download-only",
@@ -145,18 +154,18 @@ def main():
             logger.error("No tile source selected")
             raise SystemExit("No tile source selected")
 
-        downloader = Downloader(tiles, source, args.out)
+        downloader = Downloader(tiles, source, args.tiles_out)
         result: TileImageCollection
 
         if args.mosaic_only:
-            result = TileImageCollection(args.out)
+            result = TileImageCollection(args.tiles_out)
             result.load(tiles)
         else:
             result = downloader.run(show_progress=args.no_progress)
             logger.info(f"Download result: {result}")
 
         if not args.download_only:
-            result.mosaic()
+            result.mosaic(tiff=args.tiff, png=args.png)
         logger.info("Done")
 
     except Exception as e:

@@ -41,8 +41,7 @@ class CLILogFormatter(logging.Formatter):
         super().__init__(fmt or '   %(level_icon)s %(message)s')
 
     def format(self, record):
-        record.level_letter = self.LEVEL_MAP.get(record.levelno, '?')
-
+        record.level_icon = self.LEVEL_MAP.get(record.levelno, '?')
         short = record.name.rsplit('.', 1)[-1]
         record.short_name = f"{short:<{self.NAME_WIDTH}}"
 

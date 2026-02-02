@@ -90,17 +90,7 @@ class TileCollection(ABC):
     def __repr__(self) -> str:
         return f"TileCollection; len={len(self)}; x-extent=({self.feature.bbox.minx}-{self.feature.bbox.maxx}); y-extent=({self.feature.bbox.miny}-{self.feature.bbox.maxy})"
 
-    def tile_bounds(self, x, y, z) -> Tuple[float, float, float, float]:
-        n = 2**z
-
-        lon_min = x / n * 360.0 - 180.0
-        lon_max = (x + 1) / n * 360.0 - 180.0
-
-        lat_min = math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * (y + 1) / n))))
-        lat_max = math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * y / n))))
-
-        logger.debug(f"Tile bounds calculated for z={z},x={x},y={y}: ({lon_min},{lat_min},{lon_max},{lat_max})")
-        return lon_min, lat_min, lon_max, lat_max
+    
 
     @property
     def to_list(self) -> list[Tile]:
@@ -150,6 +140,18 @@ class TilesByBBox(TileCollection):
 
 class TilesByShape(TileCollection):
 
+    def tile_bounds(self, x, y, z) -> Tuple[float, float, float, float]:
+        n = 2**z
+
+        lon_min = x / n * 360.0 - 180.0
+        lon_max = (x + 1) / n * 360.0 - 180.0
+
+        lat_min = math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * (y + 1) / n))))
+        lat_max = math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * y / n))))
+
+        logger.debug(f"Tile bounds calculated for z={z},x={x},y={y}: ({lon_min},{lat_min},{lon_max},{lat_max})")
+        return lon_min, lat_min, lon_max, lat_max
+    
     def _build_tile_cache(self) -> list[Tile]:
         from shapely.geometry import box
 

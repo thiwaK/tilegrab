@@ -6,6 +6,7 @@ from typing import Union
 
 logger = logging.getLogger(__name__)
 
+TILE_EPSG = 4326 #Web Mercator - 3857
 class GeoDataset:
 
     @property
@@ -63,14 +64,14 @@ class GeoDataset:
             logger.critical("Dataset has no CRS defined")
             raise RuntimeError("Missing CRS")
 
-        if epsg != 4326:
-            logger.info(f"Reprojecting dataset from EPSG:{epsg} to EPSG:4326")
-            gdf = gdf.to_crs(epsg=4326)
+        if epsg != TILE_EPSG: #Web Mercator
+            logger.info(f"Reprojecting dataset from EPSG:{epsg} to EPSG:{TILE_EPSG}")
+            gdf = gdf.to_crs(epsg=TILE_EPSG)
         else:
-            logger.debug("Dataset already in EPSG:4326")
+            logger.debug(f"Dataset already in EPSG:{TILE_EPSG}")
 
         self.original_epsg = epsg
-        self.current_epsg = 4326
+        self.current_epsg = TILE_EPSG
         self.source = gdf
         self.source_path = source_path
         logger.info(f"GeoDataset initialized successfully: {len(gdf)} features")
