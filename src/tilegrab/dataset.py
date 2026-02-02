@@ -1,6 +1,10 @@
+import logging
 from pathlib import Path
 from box import Box
 from typing import Union
+
+
+logger = logging.getLogger(__name__)
 
 class GeoDataset:
 
@@ -8,6 +12,7 @@ class GeoDataset:
     def bbox(self):
         minx, miny, maxx, maxy = self.source.total_bounds
         bbox_dict = Box({"minx": minx, "miny": miny, "maxx": maxx, "maxy": maxy})
+        logger.debug(f"Bbox calculated: minx={minx}, miny={miny}, maxx={maxx}, maxy={maxy}")
         return bbox_dict
     
     @property
@@ -17,14 +22,19 @@ class GeoDataset:
     @property
     def x_extent(self):
         minx, maxx = self.source.total_bounds
-        return (maxx - minx) + 1
+        extent = (maxx - minx) + 1
+        logger.debug(f"X extent calculated: {extent}")
+        return extent
 
     @property
     def y_extent(self):
         miny, maxy = self.source.total_bounds
-        return (maxy - miny) + 1
+        extent = (maxy - miny) + 1
+        logger.debug(f"Y extent calculated: {extent}")
+        return extent
 
-    def buffer(self, distance:int) -> None:
+    def buffer(self, distance: int) -> None:
+        logger.debug(f"Buffering geometry by {distance} units")
         self.source.geometry.buffer(distance)
 
     def __init__(self, source_path: Union[Path, str]):
@@ -32,21 +42,35 @@ class GeoDataset:
         from pyproj import CRS
 
         source_path = Path(source_path)
-        gdf = gpd.read_file(source_path)
+        logger.info(f"Loading GeoDataset from: {source_path}")
+        
+        try:
+            gdf = gpd.read_file(source_path)
+        except Exception as e:
+            logger.error(f"Failed to read geospatial file: {source_path}", exc_info=True)
+            raise
+        
         epsg = None
 
         if gdf.crs is not None:
             try:
                 epsg = CRS.from_user_input(gdf.crs).to_epsg()
-            except Exception:
+                logger.debug(f"Detected CRS EPSG code: {epsg}")
+            except Exception as e:
+                logger.critical(f"Unable to parse CRS from dataset: {gdf.crs}", exc_info=True)
                 raise RuntimeError("Unable to get CRS from the dataset")
         else:
+            logger.critical("Dataset has no CRS defined")
             raise RuntimeError("Missing CRS")
 
         if epsg != 4326:
+            logger.info(f"Reprojecting dataset from EPSG:{epsg} to EPSG:4326")
             gdf = gdf.to_crs(epsg=4326)
+        else:
+            logger.debug("Dataset already in EPSG:4326")
 
         self.original_epsg = epsg
         self.current_epsg = 4326
         self.source = gdf
         self.source_path = source_path
+        logger.info(f"GeoDataset initialized successfully: {len(gdf)} features")

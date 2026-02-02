@@ -1,5 +1,7 @@
+import logging
 from typing import Dict, Optional
 
+logger = logging.getLogger(__name__)
 
 class TileSource:
     URL_TEMPLATE = ""
@@ -8,13 +10,16 @@ class TileSource:
     def __init__(
         self, 
         api_key: Optional[str] = None, 
-        headers: Optional[Dict[str, str]]  = None
+        headers: Optional[Dict[str, str]] = None
     ) -> None:
         self._headers = headers
         self.api_key = api_key
+        logger.debug(f"Initializing TileSource: {self.name}, has_api_key={api_key is not None}")
 
     def get_url(self, z: int, x: int, y: int) -> str:
-        return self.URL_TEMPLATE.format(x=x, y=y, z=z)
+        url = self.URL_TEMPLATE.format(x=x, y=y, z=z)
+        logger.debug(f"Generated URL for {self.name}: z={z}, x={x}, y={y}")
+        return url
 
     def headers(self) -> Dict[str, str]:
         return self._headers or {
@@ -49,5 +54,9 @@ class Nearmap(TileSource):
     URL_TEMPLATE = "https://api.nearmap.com/tiles/v3/Vert/{z}/{x}/{y}.png?apikey={token}"
 
     def get_url(self, z: int, x: int, y: int) -> str:
-        assert self.api_key
-        return self.URL_TEMPLATE.format(x=x, y=y, z=z, token=self.api_key)
+        if not self.api_key:
+            logger.error("Nearmap API key is required but not provided")
+            raise AssertionError("API key required for Nearmap")
+        url = self.URL_TEMPLATE.format(x=x, y=y, z=z, token=self.api_key)
+        logger.debug(f"Generated Nearmap URL: z={z}, x={x}, y={y}")
+        return url
