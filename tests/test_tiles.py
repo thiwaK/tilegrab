@@ -38,9 +38,9 @@ def test_tiles_by_bbox_to_list(mock_geodataset_bbox):
     assert isinstance(tile_list, list)
     assert len(tile_list) > 0
     for tile in tile_list:
-        assert 'z' in tile
-        assert 'x' in tile
-        assert 'y' in tile
+        assert tile.z
+        assert tile.x
+        assert tile.y
         assert tile.z == 10
 
 def test_tiles_by_shape_to_list(mock_geodataset_shape):
@@ -49,9 +49,9 @@ def test_tiles_by_shape_to_list(mock_geodataset_shape):
     assert isinstance(tile_list, list)
     # Depending on the shape, might have tiles or not
     for tile in tile_list:
-        assert 'z' in tile
-        assert 'x' in tile
-        assert 'y' in tile
+        assert tile.z
+        assert tile.x
+        assert tile.y
         assert tile.z == 10
 
 def test_safe_limit_exceeded():

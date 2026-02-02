@@ -1,30 +1,61 @@
-from box import Box
 import math
-from typing import List, Optional, Tuple
+from typing import Any, List, Tuple
 import mercantile
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Union
 from .dataset import GeoDataset
+from box import Box
 
+@dataclass
+class Tile:
+    x:int = 0
+    y:int = 0
+    z:int = 0
 
-class Tiles(ABC):
+    def __post_init__(self):
+        self._position = None
+
+    @classmethod
+    def from_tuple(cls, t: tuple[int, int, int]) -> "Tile":
+        return cls(*t)
     
-    MIN_X: int = 0
-    MAX_X: int = 0
-    MIN_Y: int = 0
-    MAX_Y: int = 0
-    _cache: Union[List[Box], None] = None
+    @property
+    def url(self) -> Union[str, None]:
+        return self._url
+
+    @url.setter
+    def url(self, value: str):
+        self._url = value
+
+    @property
+    def position(self) -> Box:
+        if self._position is None:
+            raise RuntimeError("Image does not have an position")
+        return self._position
+
+    @position.setter
+    def position(self, value: Tuple[float, float]):
+        x, y,  = self.x - value[0], self.y - value[1]
+        self._position = Box({'x':x, 'y':y})
+
+class TileCollection(ABC):
+    
+    MIN_X: float = 0
+    MAX_X: float = 0
+    MIN_Y: float = 0
+    MAX_Y: float = 0
+    _cache: Union[List[Tile], None] = None
 
     @abstractmethod
-    def _build_tile_cache(self) -> list[Box]:
+    def _build_tile_cache(self) -> list[Tile]:
         raise NotImplementedError
 
     def __len__(self):
         return sum(1 for _ in self)
 
     def __iter__(self):
-        assert self._cache
-        for t in self._cache:
+        for t in self._cache: # type: ignore
             yield t.z, t.x, t.y
 
     def __init__(self, feature: GeoDataset, zoom: int, SAFE_LIMIT: int = 250):
@@ -57,9 +88,8 @@ class Tiles(ABC):
 
         return lon_min, lat_min, lon_max, lat_max
 
-
     @property
-    def to_list(self) -> list[Box]:
+    def to_list(self) -> list[Tile]:
         if self._cache is None:
             self._build_tile_cache()
             self._update_min_max()
@@ -76,11 +106,16 @@ class Tiles(ABC):
         self.MAX_X, self.MIN_X = max(x), min(x)
         self.MAX_Y, self.MIN_Y = max(y), min(y)
 
-class TilesByBBox(Tiles):
+        print(f" - TileCollection: x=({self.MIN_X}, {self.MAX_X}) y=({self.MIN_Y}, {self.MAX_Y})")
+
+        for i in range(len(self._cache)):
+            self._cache[i].position = self.MIN_X, self.MIN_Y
+
+class TilesByBBox(TileCollection):
     
-    def _build_tile_cache(self) -> list[Box]:
+    def _build_tile_cache(self) -> list[Tile]:
         self._cache =  [
-            Box({"z": t.z, "x": t.x, "y": t.y})
+            Tile(t.x, t.y, t.z)
             for t in mercantile.tiles(
                 self.feature.bbox.minx,
                 self.feature.bbox.miny,
@@ -92,9 +127,9 @@ class TilesByBBox(Tiles):
 
         return self._cache
 
-class TilesByShape(Tiles):
+class TilesByShape(TileCollection):
 
-    def _build_tile_cache(self) -> list[Box]:
+    def _build_tile_cache(self) -> list[Tile]:
         from shapely.geometry import box
 
         geometry = self.feature.shape
@@ -111,7 +146,7 @@ class TilesByShape(Tiles):
         ):
             tb = box(*self.tile_bounds(t.x, t.y, t.z))
             if tb.intersects(geometry):
-                tiles.append(Box({"z": t.z, "x": t.x, "y": t.y}))
+                tiles.append(Tile(t.x, t.y, t.z))
         
         self._cache = tiles
         return tiles

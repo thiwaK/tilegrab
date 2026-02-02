@@ -1,21 +1,24 @@
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from typing import Tuple, Iterable, Optional, Dict
+from typing import List, Optional, Union
 import requests
 from requests.adapters import HTTPAdapter, Retry
 from tqdm import tqdm
-from typing import Tuple
+import tempfile
+from pathlib import Path
+import mimetypes
+import magic
 
 from tilegrab.sources import TileSource
-from tilegrab.tiles import Tiles
-
+from tilegrab.tiles import TileCollection, Tile
+from tilegrab.images import TileImageCollection, TileImage
 
 @dataclass
 class Downloader:
-    tiles: Tiles
+    tiles: TileCollection
     tile_source: TileSource
-    output_dir: str = "saved_tiles"
+    temp_tile_dir: Optional[Union[str, Path]] = None
     session: Optional[requests.Session] = None
     REQUEST_TIMEOUT: int = 15
     MAX_RETRIES: int = 5
@@ -23,8 +26,14 @@ class Downloader:
     OVERWRITE: bool = True
 
     def __post_init__(self):
-        os.makedirs(self.output_dir, exist_ok=True)
+
+        if not self.temp_tile_dir:
+            tmpdir = tempfile.mkdtemp()
+            self.temp_tile_dir = Path(tmpdir)
+
+        os.makedirs(self.temp_tile_dir, exist_ok=True)
         self.session = self.session or self._init_session()
+        self.image_col = TileImageCollection(self.temp_tile_dir)
 
     def _init_session(self) -> requests.Session:
         session = requests.Session()
@@ -38,20 +47,66 @@ class Downloader:
         session.mount("http://", HTTPAdapter(max_retries=retries))
         return session
 
-    def download_tile(self, z: int, x: int, y: int) -> Tuple[str, bool]:
 
+
+
+    def get_mime_and_ext(self, content: bytes, fallback_name: Union[str, None] = None):
+        # Detect MIME type from bytes
+        mime = magic.from_buffer(content[0:2048], mime=True)
+        if not mime:
+            return None, None
+        print("mime", mime)
+        # Ensure it's an image MIME
+        if not mime.startswith("image/"):
+            return mime, None
+
+        # Try to get extension from mimetypes
+        ext = mimetypes.guess_extension(mime)
+        if ext:
+            return mime, ext.lstrip(".")  # e.g., "png", "jpeg"
+
+        # Fallback: use magic to get a file description and map common types
+        desc = magic.from_buffer(content)  # e.g., "PNG image data..."
+        # Common manual mappings
+        mapping = {
+            "PNG image data": "png",
+            "JPEG image data": "jpg",
+            "GIF image data": "gif",
+            "TIFF image data": "tiff",
+            "WEBP image data": "webp",
+            "BMP image": "bmp",
+        }
+        for key, v in mapping.items():
+            if key in desc:
+                return mime, v
+
+        # Final fallback: try to open with PIL to infer format
+        try:
+            from io import BytesIO
+            from PIL import Image
+
+            img = Image.open(BytesIO(content))
+            fmt = img.format  # e.g., "PNG", "JPEG"
+            if fmt:
+                return mime, fmt.lower().replace("jpeg", "jpg")
+        except Exception:
+            pass
+
+        # If still unknown, optionally use fallback_name extension
+        if fallback_name:
+            return mime, Path(fallback_name).suffix.lstrip(".") or None
+
+        return mime, None
+
+
+    def download_tile(self, tile: Tile) -> bool:
+
+        x,y,z = tile.x,tile.y,tile.z
         url = self.tile_source.get_url(z, x, y)
         headers = self.tile_source.headers() or {}
-
-        ext = ".png"
-        if ".jpg" in url or ".jpeg" in url:
-            ext = ".jpg"
-        elif ".png" in url or url.endswith(".png"):
-            ext = ".png"
-            
+        tile.url = url
+        
         # print(f"START {url}:{ext}: z:{z} x:{x} y:{y}")
-        out_path = os.path.join(self.output_dir, f"{z}_{x}_{y}{ext}")
-
         try:
             resp = self.session.get(url, headers=headers, timeout=self.REQUEST_TIMEOUT) # type: ignore
             resp.raise_for_status()
@@ -64,63 +119,61 @@ class Downloader:
             
             content = resp.content
             if not content:
-                return out_path, False
-
-            self._save(content, out_path)
-            return out_path, True
+                print("Content Error:", content)
+                return False
+            
+            # self.get_mime_and_ext(content)
+            
+            img = TileImage(tile, content)
+            img.extension = "png"
+            self.image_col.append(img)
+            return True
+        
         except Exception:
             raise RuntimeWarning(f"Failed to fetch {z}/{x}/{y}")
 
     def run(
         self,
-        workers: int = 8,
+        workers: int = 8,   
         show_progress: bool = True,
-    ) -> Dict[str, bool]:
+    ) -> TileImageCollection:
 
-        results = {}
+        results = []
         print(f"    - tile count: {len(self.tiles)}")
 
         if show_progress:
             pbar = tqdm(total=len(self.tiles), desc=f"Downloading", unit="tile")
         else:
             pbar = None
+        
+        for tile in self.tiles.to_list:
+            res = self.download_tile(tile)
+            results.append(res)
+            if pbar:
+                pbar.update(1)
 
-        with ThreadPoolExecutor(max_workers=workers) as exe:
-            future_to_tile = {
-                exe.submit(self.download_tile, tile.z, tile.x, tile.y): tile for tile in self.tiles.to_list
-            }
-            for fut in as_completed(future_to_tile):
-                z, x, y = future_to_tile[fut]
-                
-                try:
-                    path, ok = fut.result()
-                    
-                except Exception:
-                    path, ok = (f"{z}/{x}/{y}", False)
+        # with ThreadPoolExecutor(max_workers=workers) as exe:
+        #     future_to_tile = {
+        #         exe.submit(self.download_tile, tile): tile for tile in self.tiles.to_list
+        #     }
+        #     for fut in as_completed(future_to_tile):
+        #         try:
+        #             results.append(fut.result())
+        #         except Exception:
+        #             results.append(False)
 
-                results[path] = ok
-                if pbar:
-                    pbar.update(1)
+        #         if pbar:
+        #             pbar.update(1)
         if pbar:
             pbar.close()
-            
-        return results
 
-    def _evaluate_result(self, result):
-        success = sum(1 for v in result.values() if v)
+        self._evaluate_result(results)
+        return self.image_col
+
+    def _evaluate_result(self, result:List):
+        print("result", result)
+        print("self.image_col", self.image_col)
+        success = sum(1 for v in result if v)
         print(f"Download completed: {success}/{len(self.tiles)} successful.")
 
-
-    def _save(self, img, path):
-
-        if os.path.exists(path) and os.path.getsize(path) == 0:
-            try:
-                os.remove(path)
-            except Exception:
-                raise RuntimeError("Unable to remove: " + path)
-
-        if (os.path.exists(path) and self.OVERWRITE) or (not os.path.exists(path)):
-            with open(path, "wb") as f:
-                f.write(img)
-        
-        # print(f"Done {path}")
+    

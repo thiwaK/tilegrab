@@ -5,7 +5,7 @@ from PIL import Image
 import re
 import os
 
-from tilegrab.tiles import Tiles
+from tilegrab.tiles import TileCollection
 
 
 class Mosaic:
@@ -51,7 +51,7 @@ class Mosaic:
         else:
             return [p for p in directory.glob(f"*{ext}") if p.is_file()]
 
-    def merge(self, tiles: Tiles, tile_size: int = 256):
+    def merge(self, tiles: TileCollection, tile_size: int = 256):
 
         img_w = int((tiles.MAX_X - tiles.MIN_X + 1) * tile_size)
         img_h = int((tiles.MAX_Y - tiles.MIN_Y + 1) * tile_size)

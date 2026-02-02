@@ -106,18 +106,14 @@ def main():
     else:
         raise SystemExit("No tile source selected")
 
-    if not (args.mosaic_only):
-        downloader = Downloader(tiles, source, args.out)
-        result = downloader.run(show_progress=args.no_progress)
+
+    downloader = Downloader(tiles, source, args.out)
+    result = downloader.run(show_progress=args.no_progress)
 
 
-    if args.download_only:
-        exit()
-
+    print(result)
     print(f"Creating mosaic")
-    from tilegrab.mosaic import Mosaic
-    mosaic = Mosaic(args.out)
-    mosaic.merge(tiles)
+    result.mosaic()
     
     print(f"Done.")
 
