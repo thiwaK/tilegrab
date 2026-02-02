@@ -7,8 +7,6 @@ from requests.adapters import HTTPAdapter, Retry
 from tqdm import tqdm
 import tempfile
 from pathlib import Path
-import mimetypes
-import magic
 
 from tilegrab.sources import TileSource
 from tilegrab.tiles import TileCollection, Tile
@@ -47,65 +45,13 @@ class Downloader:
         session.mount("http://", HTTPAdapter(max_retries=retries))
         return session
 
-
-
-
-    def get_mime_and_ext(self, content: bytes, fallback_name: Union[str, None] = None):
-        # Detect MIME type from bytes
-        mime = magic.from_buffer(content[0:2048], mime=True)
-        if not mime:
-            return None, None
-        print("mime", mime)
-        # Ensure it's an image MIME
-        if not mime.startswith("image/"):
-            return mime, None
-
-        # Try to get extension from mimetypes
-        ext = mimetypes.guess_extension(mime)
-        if ext:
-            return mime, ext.lstrip(".")  # e.g., "png", "jpeg"
-
-        # Fallback: use magic to get a file description and map common types
-        desc = magic.from_buffer(content)  # e.g., "PNG image data..."
-        # Common manual mappings
-        mapping = {
-            "PNG image data": "png",
-            "JPEG image data": "jpg",
-            "GIF image data": "gif",
-            "TIFF image data": "tiff",
-            "WEBP image data": "webp",
-            "BMP image": "bmp",
-        }
-        for key, v in mapping.items():
-            if key in desc:
-                return mime, v
-
-        # Final fallback: try to open with PIL to infer format
-        try:
-            from io import BytesIO
-            from PIL import Image
-
-            img = Image.open(BytesIO(content))
-            fmt = img.format  # e.g., "PNG", "JPEG"
-            if fmt:
-                return mime, fmt.lower().replace("jpeg", "jpg")
-        except Exception:
-            pass
-
-        # If still unknown, optionally use fallback_name extension
-        if fallback_name:
-            return mime, Path(fallback_name).suffix.lstrip(".") or None
-
-        return mime, None
-
-
     def download_tile(self, tile: Tile) -> bool:
 
         x,y,z = tile.x,tile.y,tile.z
         url = self.tile_source.get_url(z, x, y)
         headers = self.tile_source.headers() or {}
         tile.url = url
-        
+
         # print(f"START {url}:{ext}: z:{z} x:{x} y:{y}")
         try:
             resp = self.session.get(url, headers=headers, timeout=self.REQUEST_TIMEOUT) # type: ignore
@@ -122,10 +68,7 @@ class Downloader:
                 print("Content Error:", content)
                 return False
             
-            # self.get_mime_and_ext(content)
-            
             img = TileImage(tile, content)
-            img.extension = "png"
             self.image_col.append(img)
             return True
         
@@ -171,8 +114,6 @@ class Downloader:
         return self.image_col
 
     def _evaluate_result(self, result:List):
-        print("result", result)
-        print("self.image_col", self.image_col)
         success = sum(1 for v in result if v)
         print(f"Download completed: {success}/{len(self.tiles)} successful.")
 

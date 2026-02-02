@@ -22,10 +22,29 @@ class TileImage:
         self._tile = tile
         self._img = PLIImage.open(BytesIO(image))
         self._path: Union[Path, None] = None
+        self._ext: str = self._get_image_type(image)
 
     def __repr__(self) -> str:
         return f"TileImage; name={self.name}; path={self.path}; url={self.url}; position={self.position}"
 
+    def _get_image_type(self, data: Union[bytes, bytearray]) -> str:
+
+        b = bytes(data)
+
+        # PNG: 8 bytes
+        if b.startswith(b'\x89PNG\r\n\x1a\n'):
+            return 'png'
+
+        # JPEG / JPG: files start with FF D8 and end with FF D9; common check uses start bytes
+        if len(b) >= 2 and b[0:2] == b'\xff\xd8':
+            return 'jpg'  # treat both jpg and jpeg as 'jpg'
+
+        # BMP: starts with 'BM' (0x42 0x4D)
+        if len(b) >= 2 and b[0:2] == b'BM':
+            return 'bmp'
+
+        return "png"
+    
     def save(self):
         self._img.save(self.path)
 
