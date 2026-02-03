@@ -7,7 +7,7 @@ from tilegrab.images import TileImageCollection
 from tilegrab.logs import setup_logging
 from tilegrab.tiles import TilesByShape, TilesByBBox
 from tilegrab.dataset import GeoDataset
-from tilegrab import version
+from tilegrab import __version__
 
 
 logger = logging.getLogger(__name__)
@@ -109,7 +109,7 @@ def main():
     if not args.quiet:
         print()
         print(f"\033[37m   " + ("-" * 60) + "\033[0m")
-        print(f"\033[97m  TileGrab v{version}\033[0m".rjust(50))
+        print(f"\033[97m  TileGrab v{__version__}\033[0m".rjust(50))
         print(f"\033[37m   " + ("-" * 60) + "\033[0m")
 
     try:

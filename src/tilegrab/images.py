@@ -133,6 +133,7 @@ class TileImage:
         return self._tile.url
 
 WEB_MERCATOR_EXTENT = 20037508.342789244
+EPSG = 3857
 class TileImageCollection:
     images: List[TileImage] = []
     width: int = 0
@@ -154,6 +155,7 @@ class TileImageCollection:
         logger.info("Start loading saved ImageTiles")
         pat = re.compile(r'^([0-9]+)_([0-9]+)_([0-9]+)\.[A-Za-z0-9]+$')
         image_col = [p for p in self.path.glob(f"*.*") if p.is_file()]
+        self.zoom = tile_collection.to_list[0].z
 
         for tile in tile_collection.to_list:
             found_matching_image = False
@@ -180,6 +182,8 @@ class TileImageCollection:
         self.images.append(img)
         logger.debug(f"Image appended to collection: {img.name}")
         img.save()
+
+        self.zoom = img.tile.z
 
     def __init__(self, path: Union[Path, str]) -> None:
         self.path = Path(path)
@@ -215,7 +219,7 @@ class TileImageCollection:
     def mosaic(self, tiff:bool=True, png:bool=False):
         logger.info("Starting mosaic creation")
         self._update_collection_dim()
-
+    
         logger.info(f"Mosaicking {len(self.images)} images into {self.width}x{self.height}")
         merged_image = PLIImage.new("RGB", (self.width, self.height))
 
@@ -253,7 +257,7 @@ class TileImageCollection:
                 width=width_px,
                 count=data.shape[0],
                 dtype=data.dtype,
-                crs="EPSG:3857",
+                crs=f"EPSG:{EPSG}",
                 transform=transform,
             ) as dst:
                 dst.write(data)

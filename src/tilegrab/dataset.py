@@ -6,7 +6,7 @@ from typing import Union
 
 logger = logging.getLogger(__name__)
 
-TILE_EPSG = 4326 #Web Mercator - 3857
+TILE_EPSG = 4326 #Web Mercator - 3857 | 4326 - WGS84
 class GeoDataset:
 
     @property

@@ -7,7 +7,7 @@ requires = [
 
 [project]
 name = "tilegrab"
-version = "1.1.0"
+version = "1.2.0b1"
 description = "Fast geospatial map tile downloader and mosaicker"
 readme = "README.md"
 authors = [
@@ -25,7 +25,7 @@ keywords = [
 
 dependencies = [
     "requests",
-    "mercantile",
+    "rasterio",
     "pillow",
     "tqdm",
     "python-box",
