@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from .dataset import GeoDataset
 from box import Box
-
+from functools import cache
 
 logger = logging.getLogger(__name__)
 
@@ -116,6 +116,7 @@ class TileCollection(ABC):
         return lon_min, lat_min, lon_max, lat_max
 
     @property
+    @cache
     def to_list(self) -> List[Tile]:
         cache = list(self._cache)
         if cache is None or len(cache) < 1:

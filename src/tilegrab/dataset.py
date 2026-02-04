@@ -1,15 +1,17 @@
+from dataclasses import dataclass
 import logging
 from pathlib import Path
 from box import Box
 from typing import Union
-
+from functools import cache
 
 logger = logging.getLogger(__name__)
 
 TILE_EPSG = 4326 #Web Mercator - 3857 | 4326 - WGS84
-class GeoDataset:
 
+class GeoDataset:
     @property
+    @cache
     def bbox(self):
         minx, miny, maxx, maxy = self.source.total_bounds
         bbox_dict = Box({"minx": minx, "miny": miny, "maxx": maxx, "maxy": maxy})

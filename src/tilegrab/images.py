@@ -1,4 +1,5 @@
 from collections import defaultdict
+from functools import cache
 import logging
 from dataclasses import dataclass
 from pathlib import Path, PosixPath, WindowsPath
@@ -237,6 +238,7 @@ class TileImageCollection:
 
         self.zoom = img.tile.z
 
+    @cache
     def _create_mosaic(self) -> PILImage.Image:
         logger.info("Start mosaicing TileImageCollection")
         self._update_collection_dim()
@@ -297,7 +299,7 @@ class TileImageCollection:
             merged_image.save(output_path)
             logger.info(f"Mosaic saved to {output_path}")
 
-    def group(self, width: int, height: int, overlap: bool):
+    def group(self, width: int, height: int, export_types:List[int], overlap: bool):
         if width <= 0 or height <= 0:
             raise ValueError("width and height must be positive integers")
         
@@ -315,28 +317,23 @@ class TileImageCollection:
         
         view = view[..., 0, :, :, :]
         OH, OW = view.shape[:2]
-        logger.info(f"Saving groups into {out_dir}")
+        logger.info(f"Saving groups into ./{out_dir}")
         for i in range(0, OH, height*image_px_height):
             for j in range(0, OW, width*image_px_width):
                 patch = view[i, j]
                 if not (patch == 0).all():
                     img = PILImage.fromarray(patch)
-                    logger.debug(f"Saving group {i}{j} as {i}{j}.png")
-                    img.save(os.path.join(out_dir, f"{i}{j}.png"))
+                    if ExportType.PNG in export_types:
+                        logger.debug(f"Saving group {i}{j} as {i}{j}.png")
+                        img.save(os.path.join(out_dir, f"{i}{j}.png"))
+                    if ExportType.JPG in export_types:
+                        logger.debug(f"Saving group {i}{j} as {i}{j}.jpg")
+                        img.save(os.path.join(out_dir, f"{i}{j}.jpg"))
+                    if ExportType.TIFF in export_types:
+                        logger.error(f"TIFF exports for tile groups not implemented yet")
+                        raise NotImplementedError
                 else:
                     logger.debug(f"Skip no-data group {i}{j}")
-
-
-        
-
-        # W, H = merged_image_arr.size[0]*image_width, merged_image_arr.size[0]*image_height
-        # kh, kw = height*image_height, width*image_width
-        # stride = 256
-
-        # for y in range(0, H - kh + 1, stride):
-        #     for x in range(0, W - kw + 1, stride):
-        #         patch = merged_image_arr.crop((x, y, x + kw, y + kh))
-        #         print(patch)
 
     def export_collection(self, type: ExportType):
         logger.info(f"Exporting collection as type {type}")
