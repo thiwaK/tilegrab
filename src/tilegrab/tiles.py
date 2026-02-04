@@ -1,13 +1,11 @@
 import logging
 import math
-from typing import Any, Dict, Generator, Iterator, List, Tuple
+from typing import Iterator, List, Tuple, Union
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Union
 from .dataset import GeoDataset
 from box import Box
-from shapely.geometry import box
-from shapely import intersects
+
 
 logger = logging.getLogger(__name__)
 
@@ -73,17 +71,21 @@ class TileCollection(ABC):
         for t in self._cache:
             yield t
 
-    def __init__(self, feature: GeoDataset, zoom: int, SAFE_LIMIT: int = 250):
+    def __init__(self, 
+        geo_dataset: GeoDataset, 
+        zoom: int, 
+        SAFE_LIMIT: int = 250
+    ):
         self.zoom = zoom
         self.SAFE_LIMIT = SAFE_LIMIT
-        self.feature = feature
+        self.geo_dataset = geo_dataset
 
         logger.info(
             f"Initializing TileCollection: zoom={zoom}, safe_limit={SAFE_LIMIT}"
         )
 
-        assert feature.bbox.minx < feature.bbox.maxx
-        assert feature.bbox.miny < feature.bbox.maxy
+        assert geo_dataset.bbox.minx < geo_dataset.bbox.maxx
+        assert geo_dataset.bbox.miny < geo_dataset.bbox.maxy
 
         self._build_tile_cache()
 
@@ -96,7 +98,7 @@ class TileCollection(ABC):
         logger.info(f"TileCollection initialized with {len(self)} tiles")
 
     def __repr__(self) -> str:
-        return f"TileCollection; len={len(self)}; x-extent=({self.feature.bbox.minx}-{self.feature.bbox.maxx}); y-extent=({self.feature.bbox.miny}-{self.feature.bbox.maxy})"
+        return f"TileCollection; len={len(self)}; x-extent=({self.geo_dataset.bbox.minx}-{self.geo_dataset.bbox.maxx}); y-extent=({self.geo_dataset.bbox.miny}-{self.geo_dataset.bbox.maxy})"
 
     def tile_bounds(self, tile: Union[Tile, Box]) -> Tuple[float, float, float, float]:
         x, y, z = tile.x, tile.y, tile.z
@@ -162,7 +164,7 @@ class TileCollection(ABC):
 
     def _tiles_in_bounds(self, clip_to_shape=False) -> Iterator[Tile]:
         
-        bbox = self.feature.bbox
+        bbox = self.geo_dataset.bbox
 
         def tile(lng, lat, zoom):
             logger.debug(f"Creating new Tile; lat={lat}; lng={lng}")
@@ -221,8 +223,9 @@ class TileCollection(ABC):
         for i in range(ul_tile.x, lr_tile.x + 1):
             for j in range(ul_tile.y, lr_tile.y + 1):
                 if clip_to_shape:
+                    from shapely.geometry import box
                     tb = box(*self.tile_bbox(i,j,self.zoom))
-                    if not tb.intersects(self.feature.shape.geometry).any():
+                    if not tb.intersects(self.geo_dataset.shape.geometry).any():
                         logger.debug(f"Tile excluded: z={self.zoom}, x={i}, y={j}")
                         continue
                 self._tile_count += 1
@@ -235,7 +238,7 @@ class TilesByBBox(TileCollection):
 
     def _build_tile_cache(self) -> List[Tile]:
         logger.info(f"Building tiles by bounding box at zoom level {self.zoom}")
-        bbox = self.feature.bbox
+        bbox = self.geo_dataset.bbox
         logger.debug(
             f"BBox coordinates: minx={bbox.minx}, miny={bbox.miny}, maxx={bbox.maxx}, maxy={bbox.maxy}"
         )
@@ -251,7 +254,7 @@ class TilesByShape(TileCollection):
 
         logger.info(f"Building tiles by shape intersection at zoom level {self.zoom}")
         
-        bbox = self.feature.bbox
+        bbox = self.geo_dataset.bbox
         logger.debug(
             f"Checking tiles within bbox: minx={bbox.minx}, miny={bbox.miny}, maxx={bbox.maxx}, maxy={bbox.maxy}"
         )

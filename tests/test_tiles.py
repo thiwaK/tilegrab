@@ -25,12 +25,12 @@ def mock_geodataset_shape():
 def test_tiles_by_bbox_creation(mock_geodataset_bbox):
     tiles = TilesByBBox(mock_geodataset_bbox, zoom=10)
     assert tiles.zoom == 10
-    assert tiles.feature == mock_geodataset_bbox
+    assert tiles.geo_dataset == mock_geodataset_bbox
 
 def test_tiles_by_shape_creation(mock_geodataset_shape):
     tiles = TilesByShape(mock_geodataset_shape, zoom=10)
     assert tiles.zoom == 10
-    assert tiles.feature == mock_geodataset_shape
+    assert tiles.geo_dataset == mock_geodataset_shape
 
 def test_tiles_by_bbox_to_list(mock_geodataset_bbox):
     tiles = TilesByBBox(mock_geodataset_bbox, zoom=10)

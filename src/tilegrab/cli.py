@@ -2,8 +2,9 @@
 import logging
 import argparse
 from pathlib import Path
+from typing import List
 from tilegrab.downloader import Downloader
-from tilegrab.images import TileImageCollection
+from tilegrab.images import TileImageCollection, ExportType
 from tilegrab.logs import setup_logging
 from tilegrab.tiles import TilesByShape, TilesByBBox
 from tilegrab.dataset import GeoDataset
@@ -60,9 +61,10 @@ def parse_args() -> argparse.Namespace:
     mosaic_group.add_argument("--jpg", action="store_true", help="JPG image; no geo-reference")
     mosaic_group.add_argument("--png", action="store_true", help="PNG image; no geo-reference")
     mosaic_group.add_argument("--tiff", action="store_true", help="GeoTiff image; with geo-reference")
+    mosaic_group.set_defaults(tiff=True)
 
     # other options
-    p.add_argument("--zoom", type=int, required=True, help="Zoom level (integer)")
+    p.add_argument("--zoom", type=int, required=True, help="Zoom level (integer between 1 and 22)")
     p.add_argument(
         "--tiles-out",
         type=Path,
@@ -80,16 +82,19 @@ def parse_args() -> argparse.Namespace:
         help="Only mosaic tiles; do not download",
     )
     p.add_argument(
-        "--no-progress", action="store_false", help="Hide download progress bar"
+        "--tile-limit", type=int, default=250, help="Override maximum tile limit that can download (use with caution)"
+    )
+    p.add_argument(
+        "--workers", type=int, default=None, help="Max number of threads to use when parallel downloading"
+    )
+    p.add_argument(
+        "--no-parallel", action="store_false", help="Download tiles sequentially, no parallel downloading"
+    )
+    p.add_argument(
+        "--no-progress", action="store_false", help="Hide tile download progress bar"
     )
     p.add_argument("--quiet", action="store_true", help="Hide all prints")
     p.add_argument("--debug", action="store_true", help="Enable debug logging")
-    p.add_argument(
-        "--test",
-        action="store_true",
-        help="Only for testing purposes, not for normal use",
-    )
-
     return p.parse_args()
 
 
@@ -125,9 +130,9 @@ def main():
         )
 
         if args.shape:
-            tiles = TilesByShape(dataset, zoom=args.zoom)
+            tiles = TilesByShape(geo_dataset=dataset, zoom=args.zoom, SAFE_LIMIT=args.tile_limit)
         elif args.bbox:
-            tiles = TilesByBBox(dataset, zoom=args.zoom)
+            tiles = TilesByBBox(geo_dataset=dataset, zoom=args.zoom, SAFE_LIMIT=args.tile_limit)
         else:
             logger.error("No extent selector selected")
             raise SystemExit("No extent selector selected")
@@ -154,18 +159,32 @@ def main():
             logger.error("No tile source selected")
             raise SystemExit("No tile source selected")
 
-        downloader = Downloader(tiles, source, args.tiles_out)
+        downloader = Downloader(
+            tile_collection=tiles, 
+            tile_source=source, 
+            temp_tile_dir=args.tiles_out)
+        
         result: TileImageCollection
-
         if args.mosaic_only:
-            result = TileImageCollection(args.tiles_out)
-            result.load(tiles)
+            result = TileImageCollection(path=args.tiles_out)
+            result.load(tile_collection=tiles)
         else:
-            result = downloader.run(show_progress=args.no_progress)
+            result = downloader.run(
+                workers=args.workers, 
+                show_progress=args.no_progress, 
+                parallel_download=args.no_parallel)
             logger.info(f"Download result: {result}")
 
         if not args.download_only:
-            result.mosaic(tiff=args.tiff, png=args.png)
+            ex_types: List[int] = []
+            if args.tiff: 
+                ex_types.append(ExportType.TIFF)
+            if args.png: 
+                ex_types.append(ExportType.PNG)
+            if args.jpg: 
+                ex_types.append(ExportType.JPG)
+
+            result.mosaic(ex_types)
         logger.info("Done")
 
     except Exception as e:

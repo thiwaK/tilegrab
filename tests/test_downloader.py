@@ -16,7 +16,7 @@ def mock_tiles():
 @pytest.fixture
 def downloader(mock_tiles):
     source = OSM()
-    return Downloader(tiles=mock_tiles, tile_source=source, temp_tile_dir="test_tiles")
+    return Downloader(tile_collection=mock_tiles, tile_source=source, temp_tile_dir="test_tiles")
 
 
 @patch('tilegrab.downloader.requests.Session.get')

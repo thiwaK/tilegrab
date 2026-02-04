@@ -1,8 +1,6 @@
 import logging
 from dataclasses import dataclass
-from io import BytesIO
 from pathlib import Path, PosixPath, WindowsPath
-import re
 from typing import Any, List, Union
 from PIL import Image as PLIImage
 from box import Box
@@ -22,6 +20,7 @@ class TileImage:
     height: int = 256
 
     def __init__(self, tile: Tile, image: Union[bytes, bytearray]) -> None:
+        from io import BytesIO
         self._tile = tile
         try:
             self._img = PLIImage.open(BytesIO(image))
@@ -152,6 +151,8 @@ class TileImageCollection:
         return xmin, ymin, xmax, ymax
 
     def load(self, tile_collection:TileCollection):
+        import re
+
         logger.info("Start loading saved ImageTiles")
         pat = re.compile(r'^([0-9]+)_([0-9]+)_([0-9]+)\.[A-Za-z0-9]+$')
         image_col = [p for p in self.path.glob(f"*.*") if p.is_file()]
@@ -216,7 +217,7 @@ class TileImageCollection:
 
         logger.info(f"Collection dimensions calculated: {self.width}x{self.height}")
 
-    def mosaic(self, tiff:bool=True, png:bool=False):
+    def mosaic(self, export_types:List[int]):
         logger.info("Starting mosaic creation")
         self._update_collection_dim()
     
@@ -230,7 +231,7 @@ class TileImageCollection:
             merged_image.paste(image.image, (px, py))
 
         # TODO: fix this monkey patch
-        if tiff:
+        if ExportType.TIFF in export_types:
             output_path = "mosaic.tiff"
             import numpy as np
             from rasterio.transform import from_bounds
@@ -263,8 +264,13 @@ class TileImageCollection:
                 dst.write(data)
 
             logger.info(f"Mosaic saved to {output_path}")
-        if png:
+        if ExportType.PNG in export_types:
             output_path = "mosaic.png"
+            merged_image.save(output_path)
+            logger.info(f"Mosaic saved to {output_path}")
+        
+        if ExportType.JPG in export_types:
+            output_path = "mosaic.jpg"
             merged_image.save(output_path)
             logger.info(f"Mosaic saved to {output_path}")
 
