@@ -22,14 +22,14 @@ class GeoDataset:
     
     @property
     def x_extent(self):
-        minx, maxx = self.source.total_bounds
+        minx, _, maxx, _ = self.source.total_bounds
         extent = (maxx - minx) + 1
         logger.debug(f"X extent calculated: {extent}")
         return extent
 
     @property
     def y_extent(self):
-        miny, maxy = self.source.total_bounds
+        _, miny, _, maxy = self.source.total_bounds
         extent = (maxy - miny) + 1
         logger.debug(f"Y extent calculated: {extent}")
         return extent
