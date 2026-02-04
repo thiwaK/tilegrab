@@ -1,13 +1,13 @@
 
 <div align="center">
     <h1 align="center">TileGrab 🧩</h1>
-    <!-- until publish on PyPi -->
-    <img alt="TileGrab" src="https://img.shields.io/badge/testpypi-1.0.0-blue">
-    <!-- <img alt="TileGrab" src="https://img.shields.io/pypi/v/tilegrab.svg"> -->
-    <img alt="TileGrab - Python Versions" src="https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11|%203.12|%203.13-blue">
-    <!-- <img alt="TileGrab - Python Versions" src="https://img.shields.io/pypi/pyversions/tilegrab.svg"> -->
-    <!--  -->
-    <img alt="Test Status" src="https://img.shields.io/github/actions/workflow/status/thiwaK/tilegrab/test.yml?branch=main&event=push&style=flat&label=test">
+    <img alt="TileGrab" src="https://img.shields.io/pypi/v/tilegrab.svg">
+    <img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/tilegrab.svg">
+    <img alt="PyPI - Wheel" src="https://img.shields.io/pypi/wheel/tilegrab">
+    <img alt="Test Status" src="https://img.shields.io/github/actions/workflow/status/thiwaK/tilegrab/test.yml?branch=main&event=push&style=flat&label=CI">
+    <img alt="PyPI - Implementation" src="https://img.shields.io/pypi/implementation/tilegrab">
+    <img alt="GitHub code size in bytes" src="https://img.shields.io/github/languages/code-size/thiwaK/tilegrab">
+    <img alt="GitHub License" src="https://img.shields.io/github/license/thiwaK/tilegrab">
     <br/>
     <br/>
 </div>
@@ -16,7 +16,7 @@
 **Fast, scriptable map tile downloader and mosaicker for geospatial workflows.**
 
 
-`tilegrab` downloads raster map tiles from common providers (OSM, Google Satellite, ESRI World Imagery) using a **vector extent** (polygon or bounding box), then optionally mosaics them into a single raster. Built for automation, reproducibility, and real GIS work — not GUI clicking.
+`tilegrab` downloads raster map tiles from common providers (OSM, Google Satellite, ESRI World Imagery) using a **vector extent** (polygon shape or bounding box), then optionally mosaics them into a single or multiple rasters.
 
 ---
 
@@ -31,19 +31,18 @@
 
 ## Why tilegrab?
 
-Most tile downloaders fall into one of two traps:
+Most tile downloaders have two major drawbacks:
 - GUI tools that don’t scale or automate
 - Scripts that only support bounding boxes and break on real geometries
 
 `tilegrab` is different:
 
-- Uses **actual vector geometries**, not just extents  
+- Uses **actual vector geometries**, not only just extents 
+- Scalable API
 - Clean CLI, easy to script and integrate  
 - Works with **Shapefiles, GeoPackages, GeoJSON**  
-- Supports **download-only**, **mosaic-only**, or full pipelines  
+- Supports **download-only**, **mosaic-only** or full pipelines  
 - Designed for **GIS, remote sensing, and map production workflows**
-
-No magic. No black boxes.
 
 ---
 
@@ -55,8 +54,9 @@ No magic. No black boxes.
 - Multiple tile providers  
   - OpenStreetMap  
   - Google Satellite  
-  - ESRI World Imagery  
-- Automatic tile mosaicking  
+  - ESRI World Imagery
+  - or Custom providers
+- Tile mosaicking 
 - Progress reporting (optional)  
 - API-key support where required  
 - Sensible defaults, strict CLI validation  
@@ -67,12 +67,15 @@ No magic. No black boxes.
 
 ### From TestPyPI
 
+#### Stable version
 ```bash
-  pip install -i https://test.pypi.org/simple/tilegrab
+  pip install -i tilegrab
 ````
 
-> [!NOTE]
-> A stable PyPI release will follow once the API is finalized.
+#### Beta version
+```bash
+  pip install tilegrab==1.2.0b2
+````
 
 ---
 
@@ -103,76 +106,55 @@ tilegrab \
 ## CLI Usage
 
 ```bash
-usage: tilegrab [-h] --source SOURCE (--shape | --bbox) (--osm | --google_sat | --esri_sat | --key KEY) --zoom ZOOM [--out OUT] [--download-only] [--mosaic-only] [--no-progress] [--quiet]
+usage: tilegrab [-h] --source SOURCE (--shape | --bbox) (--osm | --google_sat | --esri_sat | --key KEY) (--jpg | --png | --tiff) --zoom ZOOM [--tiles-out TILES_OUT] [--download-only] [--mosaic-only]
+                [--group-tiles GROUP_TILES] [--group-overlap] [--tile-limit TILE_LIMIT] [--workers WORKERS] [--no-parallel] [--no-progress] [--quiet] [--debug]
 
 Download and mosaic map tiles
 
 options:
-  -h, --help       show this help message and exit
-  --zoom ZOOM      Zoom level (integer)
-  --out OUT        Output directory (default: ./saved_tiles)
-  --download-only  Only download tiles; do not run mosaicking or postprocessing
-  --mosaic-only    Only mosaic tiles; do not download
-  --no-progress    Hide download progress bar
-  --quiet          Hide all prints
+  -h, --help            show this help message and exit
+  --zoom ZOOM           Zoom level (integer between 1 and 22)
+  --tiles-out TILES_OUT
+                        Output directory for downloaded tiles (default: ./saved_tiles)
+  --download-only       Only download tiles; do not run mosaicking or postprocessing
+  --mosaic-only         Only mosaic tiles; do not download
+  --group-tiles GROUP_TILES
+                        Mosaic tiles but according to given WxH into ./grouped_tiles
+  --group-overlap       Overlap with the next consecutive tile when grouping
+  --tile-limit TILE_LIMIT
+                        Override maximum tile limit that can download (use with caution)
+  --workers WORKERS     Max number of threads to use when parallel downloading
+  --no-parallel         Download tiles sequentially, no parallel downloading
+  --no-progress         Hide tile download progress bar
+  --quiet               Hide all prints
+  --debug               Enable debug logging
 
 Source options(Extent):
   Options for the vector polygon source
 
-  --source SOURCE  The vector polygon source for filter tiles
-  --shape          Use actual shape to derive tiles
-  --bbox           Use shape's bounding box to derive tiles
+  --source SOURCE       The vector polygon source for filter tiles
+  --shape               Use actual shape to derive tiles
+  --bbox                Use shape's bbox to derive tiles
 
 Source options(Map tiles):
   Options for the map tile source
 
-  --osm            OpenStreetMap
-  --google_sat     Google Satellite
-  --esri_sat       ESRI World Imagery
-  --key KEY        API key where required by source
-```
+  --osm                 OpenStreetMap
+  --google_sat          Google Satellite
+  --esri_sat            ESRI World Imagery
+  --key KEY             API key where required by source
 
----
-<!-- 
-## Required Arguments
+Mosaic export formats:
+  Formats for the output mosaic image
 
-| Argument   | Description                               |
-| ---------- | ----------------------------------------- |
-| `--source` | Vector dataset used to derive tile extent |
-| `--shape`  | Use exact geometry to select tiles        |
-| `--bbox`   | Use geometry bounding box                 |
-| `--zoom`   | Web map zoom level                        |
+  --jpg                 JPG image; no geo-reference
+  --png                 PNG image; no geo-reference
+  --tiff                GeoTiff image; with geo-reference
 
----
-
-## Tile Sources (CLI)
-
-| Flag           | Source             |
-| -------------- | ------------------ |
-| `--osm`        | OpenStreetMap      |
-| `--google_sat` | Google Satellite   |
-| `--esri_sat`   | ESRI World Imagery |
-
-Optional API key:
-
-```bash
---key YOUR_API_KEY
 ```
 
 ---
 
-## Output & Processing Options
-
-| Option            | Description                                 |
-| ----------------- | ------------------------------------------- |
-| `--out <dir>`     | Output directory (default: `./saved_tiles`) |
-| `--download-only` | Download tiles only                         |
-| `--mosaic-only`   | Mosaic existing tiles only                  |
-| `--no-progress`   | Disable progress bar                        |
-| `--quiet`         | Suppress console output                     |
-
---- 
--->
 
 ## Supported Vector Formats
 
@@ -191,9 +173,6 @@ Any format readable by **GeoPandas**, including:
 
 If a tile service follows the standard `{z}/{x}/{y}` pattern, you can add it in **one small class** by extending `TileSource`.
 
-No registration. No plugin system. No magic.
-
----
 
 ### Example
 
@@ -203,12 +182,9 @@ from tilegrab.sources import TileSource
 class MyCustomSource(TileSource):
     name = "MyCustomSource name"
     description = "MyCustomSource description"
-    URL_TEMPLATE = "https://MyCustomSource/{z}/{x}/{y}.png"
+    url_template = "https://MyCustomSource/{z}/{x}/{y}.png"
 ```
 
-That’s it.
-
-Once instantiated, the source works exactly like built-in providers.
 
 ---
 
@@ -220,28 +196,19 @@ You can change how the url is generate by override `get_url` function, inside yo
 ```python
 def get_url(self, z: int, x: int, y: int) -> str:
   assert self.api_key
-  return self.URL_TEMPLATE.format(x=x, y=y, z=z, token=self.api_key)
+  return self.url_template.format(x=x, y=y, z=z, token=self.api_key)
 ```
 
 ### URL Template Rules
 
 Your tile source **must** define:
-
-* `URL_TEMPLATE`
+* `url_template`
   Must contain `{z}`, `{x}`, `{y}` placeholders.
 
 Optional but recommended:
-
 * `name` – Human-readable name
 * `description` – Short description of the imagery
 
-Example templates:
-
-```text
-https://server/{z}/{x}/{y}.png
-https://tiles.example.com/{z}/{x}/{y}.jpg
-https://api.provider.com/tiles/{z}/{x}/{y}?key={token}
-```
 
 ---
 
@@ -252,8 +219,6 @@ If your provider requires an API key, pass it during instantiation:
 ```python
 source = MyCustomSource(api_key="YOUR_KEY")
 ```
-
-`TileSource` already handles key injection — you don’t need to reinvent it.
 
 ---
 
@@ -268,10 +233,9 @@ from tilegrab.tiles import TilesByShape
 from tilegrab.dataset import GeoDataset
 
 dataset = GeoDataset("area.gpkg")
-tiles = TilesByShape(dataset, zoom=16)
-
-source = MyCustomSource(api_key="XYZ")
-downloader = Downloader(tiles, source, "output")
+tile_collection = TilesByShape(dataset, zoom=16)
+tile_source = MyCustomSource(api_key="XYZ")
+downloader = Downloader(tile_collection, tile_source, "output")
 downloader.run()
 ```
 
@@ -290,7 +254,7 @@ If you need full flexibility, use the Python API.
 
 ---
 
-## Project Structure
+<!-- ## Project Structure
 
 ```text
 tilegrab/
@@ -300,11 +264,12 @@ tilegrab/
 ├── downloader.py   # Tile download engine
 ├── mosaic.py       # Tile mosaicking
 └── sources.py      # Tile providers
-```
+``` 
 
 ---
+-->
 
-## Who This Is For
+<!-- ## Who This Is For
 
 * GIS analysts automating basemap generation
 * Remote sensing workflows needing tiled imagery
@@ -314,7 +279,7 @@ tilegrab/
 If you want a GUI, this isn’t it.
 If you want control, repeatability, and speed — it is.
 
----
+--- -->
 
 ## Roadmap
 
@@ -322,9 +287,9 @@ Planned (not promises):
 
 * Additional tile providers
 * Parallel download tuning
-* Cloud-optimized raster output
 * Raster reprojection and resampling options
 * Expanded Python API documentation
+* Test implementation
 
 ---
 
