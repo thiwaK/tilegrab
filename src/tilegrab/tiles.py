@@ -21,7 +21,7 @@ class Tile:
 
     def __post_init__(self):
         self._position = None
-        logger.debug(f"Tile created: z={self.z}, x={self.x}, y={self.y}")
+        logger.debug(f"Tile created: x={self.x}, y={self.y}, z={self.z}")
 
     # @classmethod
     # def from_tuple(cls, t: tuple[int, int, int]) -> "Tile":

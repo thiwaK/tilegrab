@@ -82,6 +82,17 @@ def parse_args() -> argparse.Namespace:
         help="Only mosaic tiles; do not download",
     )
     p.add_argument(
+        "--group-only",
+        action="store_true",
+        help="Only group tiles; do not download or mosaic. --group-tiles should specify",
+    )
+    p.add_argument(
+        "--group-tiles", type=str, default=None, help="Group tiles and save images as png into ./grouped_tiles according to given WxH"
+    )
+    p.add_argument(
+        "--group-overlap", action="store_true", help="Overlap with the next consecutive tile when grouping"
+    )
+    p.add_argument(
         "--tile-limit", type=int, default=250, help="Override maximum tile limit that can download (use with caution)"
     )
     p.add_argument(
@@ -165,7 +176,7 @@ def main():
             temp_tile_dir=args.tiles_out)
         
         result: TileImageCollection
-        if args.mosaic_only:
+        if args.mosaic_only or args.group_only:
             result = TileImageCollection(path=args.tiles_out)
             result.load(tile_collection=tiles)
         else:
@@ -176,15 +187,20 @@ def main():
             logger.info(f"Download result: {result}")
 
         if not args.download_only:
-            ex_types: List[int] = []
-            if args.tiff: 
-                ex_types.append(ExportType.TIFF)
-            if args.png: 
-                ex_types.append(ExportType.PNG)
-            if args.jpg: 
-                ex_types.append(ExportType.JPG)
+            if args.mosaic_only:
+                ex_types: List[int] = []
+                if args.tiff: 
+                    ex_types.append(ExportType.TIFF)
+                if args.png: 
+                    ex_types.append(ExportType.PNG)
+                if args.jpg: 
+                    ex_types.append(ExportType.JPG)
+                result.mosaic(ex_types)
+            
+            if args.group_only:
+                w,h = args.group_tiles.lower().split("x")
+                result.group(width=int(w), height=int(h), overlap=args.group_overlap)
 
-            result.mosaic(ex_types)
         logger.info("Done")
 
     except Exception as e:
