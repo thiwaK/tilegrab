@@ -15,7 +15,8 @@ logger = logging.getLogger(__name__)
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        prog="tilegrab", description="Download and mosaic map tiles"
+        prog="tilegrab", 
+        description="Download and mosaic map tiles"
     )
 
     # Create a named group for the vector polygon source
@@ -57,7 +58,7 @@ def parse_args() -> argparse.Namespace:
     mosaic_out_group = p.add_argument_group(
         title="Mosaic export formats", description="Formats for the output mosaic image"
     )
-    mosaic_group = mosaic_out_group.add_mutually_exclusive_group(required=True)
+    mosaic_group = mosaic_out_group.add_mutually_exclusive_group(required=False)
     mosaic_group.add_argument("--jpg", action="store_true", help="JPG image; no geo-reference")
     mosaic_group.add_argument("--png", action="store_true", help="PNG image; no geo-reference")
     mosaic_group.add_argument("--tiff", action="store_true", help="GeoTiff image; with geo-reference")
@@ -82,12 +83,7 @@ def parse_args() -> argparse.Namespace:
         help="Only mosaic tiles; do not download",
     )
     p.add_argument(
-        "--group-only",
-        action="store_true",
-        help="Only group tiles; do not download or mosaic. --group-tiles should specify",
-    )
-    p.add_argument(
-        "--group-tiles", type=str, default=None, help="Group tiles and save images as png into ./grouped_tiles according to given WxH"
+        "--group-tiles", type=str, default=None, help="Mosaic tiles but according to given WxH into ./grouped_tiles"
     )
     p.add_argument(
         "--group-overlap", action="store_true", help="Overlap with the next consecutive tile when grouping"
@@ -99,10 +95,16 @@ def parse_args() -> argparse.Namespace:
         "--workers", type=int, default=None, help="Max number of threads to use when parallel downloading"
     )
     p.add_argument(
-        "--no-parallel", action="store_false", help="Download tiles sequentially, no parallel downloading"
+        "--parallel",
+        action=argparse.BooleanOptionalAction,
+        default=False, 
+        help="Download tiles sequentially, no parallel downloading"
     )
     p.add_argument(
-        "--no-progress", action="store_false", help="Hide tile download progress bar"
+        "--progress", 
+        action=argparse.BooleanOptionalAction,
+        default=False, 
+        help="Hide tile download progress bar"
     )
     p.add_argument("--quiet", action="store_true", help="Hide all prints")
     p.add_argument("--debug", action="store_true", help="Enable debug logging")
@@ -176,7 +178,7 @@ def main():
             temp_tile_dir=args.tiles_out)
         
         result: TileImageCollection
-        if args.mosaic_only or args.group_only:
+        if args.mosaic_only:
             result = TileImageCollection(path=args.tiles_out)
             result.load(tile_collection=tiles)
         else:
@@ -186,20 +188,27 @@ def main():
                 parallel_download=args.no_parallel)
             logger.info(f"Download result: {result}")
 
+        ex_types: List[int] = []
+        
         if not args.download_only:
-            if args.mosaic_only:
-                ex_types: List[int] = []
-                if args.tiff: 
-                    ex_types.append(ExportType.TIFF)
-                if args.png: 
-                    ex_types.append(ExportType.PNG)
-                if args.jpg: 
-                    ex_types.append(ExportType.JPG)
-                result.mosaic(ex_types)
-            
-            if args.group_only:
+            if args.tiff: 
+                ex_types.append(ExportType.TIFF)
+            if args.png: 
+                ex_types.append(ExportType.PNG)
+            if args.jpg: 
+                ex_types.append(ExportType.JPG)
+
+            if args.group_tiles:
                 w,h = args.group_tiles.lower().split("x")
-                result.group(width=int(w), height=int(h), overlap=args.group_overlap)
+                result.group(
+                    width=int(w), 
+                    height=int(h),
+                    export_types=ex_types,
+                    overlap=args.group_overlap)
+            else:
+                result.mosaic(export_types=ex_types)
+            
+            
 
         logger.info("Done")
 
