@@ -226,7 +226,7 @@ class TileCollection(ABC):
                 if clip_to_shape:
                     from shapely.geometry import box
                     tb = box(*self.tile_bbox(i,j,self.zoom))
-                    if not tb.intersects(self.geo_dataset.shape.geometry).any():
+                    if not tb.intersects(self.geo_dataset.geometry.geometry).any():
                         logger.debug(f"Tile excluded: z={self.zoom}, x={i}, y={j}")
                         continue
                 self._tile_count += 1
