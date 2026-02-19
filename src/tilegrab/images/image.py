@@ -3,8 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path, PosixPath, WindowsPath
 from typing import Any, Union
 from PIL import Image as PILImage
-from box import Box
-from tilegrab.tiles import Tile
+from tilegrab.tiles import Tile, GeoBounds, TileIndex
 
 logger = logging.getLogger(__name__)
 
@@ -20,19 +19,21 @@ class TileImage:
         self._tile = tile
         try:
             self._img = PILImage.open(BytesIO(image))
-            logger.debug(f"TileImage created for z={tile.z},x={tile.x},y={tile.y}")
+            logger.debug(
+                f"TileImage created for z={tile.index.z},x={tile.index.x},y={tile.index.y}")
         except Exception as e:
             logger.error(
-                f"Failed to open image for tile z={tile.z},x={tile.x},y={tile.y}",
+                f"Failed to open image for tile z={tile.index.z},x={tile.index.x},y={tile.index.y}",
                 exc_info=True,
             )
+            logger.error(e)
             raise
 
         self._path: Union[Path, None] = None
         self._ext: str = self._get_image_type(image)
 
     def __repr__(self) -> str:
-        return f"TileImage; name={self.name}; path={self.path}; url={self.url}; position={self.position}"
+        return f"TileImage; name={self.name}; path={self.path}; url={self.url}; position={self.index}"
 
     def _get_image_type(self, data: Union[bytes, bytearray]) -> str:
         b = bytes(data)
@@ -65,7 +66,7 @@ class TileImage:
 
     @property
     def name(self) -> str:
-        return f"{self._tile.z}_{self._tile.x}_{self._tile.y}.{self._ext}"
+        return f"{self._tile.index.z}_{self._tile.index.x}_{self._tile.index.y}.{self._ext}"
 
     @property
     def tile(self) -> Tile:
@@ -123,8 +124,12 @@ class TileImage:
         logger.debug(f"Image extension set to {val}")
 
     @property
-    def position(self) -> Box:
-        return self._tile.position
+    def bounds(self) -> GeoBounds:
+        return self._tile.bounds
+    
+    @property
+    def index(self) -> TileIndex:
+        return self._tile.index
 
     @property
     def url(self) -> Union[str, None]:

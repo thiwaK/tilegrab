@@ -41,8 +41,8 @@ class TileImageCollection:
             logger.warning("Attempting to update collection dimensions with no images")
             return
 
-        x = [img.tile.x for img in self.images]
-        y = [img.tile.y for img in self.images]
+        x = [img.index.x for img in self.images]
+        y = [img.index.y for img in self.images]
         minx, maxx = min(x), max(x)
         miny, maxy = min(y), max(y)
         self.minx, self.maxx = minx, maxx
@@ -73,7 +73,7 @@ class TileImageCollection:
         logger.info("Start loading saved ImageTiles")
         pat = re.compile(r"^([0-9]+)_([0-9]+)_([0-9]+)\.[A-Za-z0-9]+$")
         image_col = [p for p in self.path.glob(f"*.*") if p.is_file()]
-        self.zoom = tile_collection.to_list[0].z
+        self.zoom = tile_collection.to_list[0].index.z
         logger.info(f"Found {len(image_col)} images at {self.path}")
 
         for tile in tile_collection.to_list:
@@ -85,7 +85,7 @@ class TileImageCollection:
                     x = int(m.group(2))
                     y = int(m.group(3))
 
-                    if tile.x == x and tile.y == y and tile.z == z:
+                    if tile.index.x == x and tile.index.y == y and tile.index.z == z:
                         logger.debug(f"Processing ImageTile x={x} y={y} z={z}")
                         with open(image_path, "rb") as f:
                             tile_image = TileImage(tile, f.read())
@@ -95,7 +95,7 @@ class TileImageCollection:
                             continue
 
             if not found_matching_image:
-                logger.warning(f"Missing ImageTile x={tile.x} y={tile.y} z={tile.z}")
+                logger.warning(f"Missing ImageTile x={tile.index.x} y={tile.index.y} z={tile.index.z}")
         
         logger.info(f"{len(self.images)} images loaded, {len(image_col) - len(self.images)} skipped")
 
@@ -107,7 +107,7 @@ class TileImageCollection:
         logger.debug(f"Image appended to collection: {img.name}")
         img.save()
 
-        self.zoom = img.tile.z
+        self.zoom = img.tile.index.z
 
     @cache
     def _create_mosaic(self) -> PILImage.Image:
@@ -120,8 +120,8 @@ class TileImageCollection:
         merged_image = PILImage.new("RGB", (self.width, self.height))
 
         for image in self.images:
-            px = int((image.position.x) * image.width)
-            py = int((image.position.y) * image.height)
+            px = int((image.index.x) * image.width)
+            py = int((image.index.y) * image.height)
             logger.debug(f"Pasting image at position ({px}, {py}): {image.name}")
             merged_image.paste(image.image, (px, py))
         
@@ -142,7 +142,7 @@ class TileImageCollection:
 
             width_px, height_px = merged_image.size
             xmin, ymin, xmax, ymax = self.mosaic_bounds(
-                self.minx, self.miny, self.maxx, self.maxy, self.images[0].tile.z
+                self.minx, self.miny, self.maxx, self.maxy, self.images[0].tile.index.z
             )
 
             transform = from_bounds(xmin, ymin, xmax, ymax, width_px, height_px)
