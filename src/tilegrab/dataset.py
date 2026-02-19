@@ -77,7 +77,7 @@ class GeoDataset:
                 raise RuntimeError("Unable to get CRS from the dataset")
         else:
             logger.critical("Dataset has no CRS defined")
-            raise RuntimeError("Missing CRS")
+            raise SystemExit("Undefined CRS")
 
         if epsg != TILE_EPSG:  # Web Mercator
             logger.info(f"Reprojecting dataset from EPSG:{epsg} to EPSG:{TILE_EPSG}")

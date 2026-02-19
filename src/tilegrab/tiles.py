@@ -68,14 +68,13 @@ class TileCollection(ABC):
         return self._tile_count
 
     def __iter__(self):
-        for t in self._cache:
-            yield t
+        for t in self._cache:  # type: ignore
+            yield t.z, t.x, t.y
+    
+    def __repr__(self) -> str:
+        return f"TileCollection; len={len(self)}; x-extent=({self.feature.bbox.minx}-{self.feature.bbox.maxx}); y-extent=({self.feature.bbox.miny}-{self.feature.bbox.maxy})"
 
-    def __init__(self, 
-        geo_dataset: GeoDataset, 
-        zoom: int, 
-        SAFE_LIMIT: int = 250
-    ):
+    def __init__(self, feature: GeoDataset, zoom: int, SAFE_LIMIT: int = 250):
         self.zoom = zoom
         self.SAFE_LIMIT = SAFE_LIMIT
         self.geo_dataset = geo_dataset
@@ -84,8 +83,8 @@ class TileCollection(ABC):
             f"Initializing TileCollection: zoom={zoom}, safe_limit={SAFE_LIMIT}"
         )
 
-        assert geo_dataset.bbox.minx < geo_dataset.bbox.maxx
-        assert geo_dataset.bbox.miny < geo_dataset.bbox.maxy
+        # assert feature.bbox.minx < feature.bbox.maxx
+        # assert feature.bbox.miny < feature.bbox.maxy
 
         self._build_tile_cache()
 
@@ -97,11 +96,7 @@ class TileCollection(ABC):
 
         logger.info(f"TileCollection initialized with {len(self)} tiles")
 
-    def __repr__(self) -> str:
-        return f"TileCollection; len={len(self)}; x-extent=({self.geo_dataset.bbox.minx}-{self.geo_dataset.bbox.maxx}); y-extent=({self.geo_dataset.bbox.miny}-{self.geo_dataset.bbox.maxy})"
-
-    def tile_bounds(self, tile: Union[Tile, Box]) -> Tuple[float, float, float, float]:
-        x, y, z = tile.x, tile.y, tile.z
+    def tile_bounds(self, x, y, z) -> Tuple[float, float, float, float]:
         n = 2**z
 
         lon_min = x / n * 360.0 - 180.0

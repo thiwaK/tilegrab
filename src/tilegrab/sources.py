@@ -4,10 +4,9 @@ from typing import Dict, Optional
 logger = logging.getLogger(__name__)
 
 class TileSource:
-    url_template: str
-    name: str
-    description: str
-    output_dir: str
+    URL_TEMPLATE = ""
+    name = None
+    api_key = None
 
     def __init__(
         self, 
@@ -33,36 +32,38 @@ class TileSource:
             "accept-language": "en-US,*",
         }
 
-
 class GoogleSat(TileSource):
     output_dir = "ggl_sat"
     name = "GoogleSat"
     description = "Google satellite imageries"
-    url_template = "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
-    
+    URL_TEMPLATE = "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
+    message = "Warning: This tile source is illegal to use as it violates Google Maps TOS Section 3.2.4a"
 
 class OSM(TileSource):
     output_dir = "osm"
     name = "OSM"
     description = "OpenStreetMap imageries"
-    url_template = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+    URL_TEMPLATE = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+    message = ""
 
 class ESRIWorldImagery(TileSource):
     output_dir = "esri_world"
     name = "ESRIWorldImagery"
     description = "ESRI satellite imageries"
-    url_template = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+    URL_TEMPLATE = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+    message = "Warning: This tile source is illegal to use without an valid Token/Key"
 
 class Nearmap(TileSource):
-    output_dir = "nearmap_sat"
+    
     name = "NearmapSat"
     description = "Nearmap satellite imageries"
-    url_template = "https://api.nearmap.com/tiles/v3/Vert/{z}/{x}/{y}.png?apikey={token}"
+    URL_TEMPLATE = "https://api.nearmap.com/tiles/v3/Vert/{z}/{x}/{y}.png?apikey={token}"
+    message = ""
 
     def get_url(self, z: int, x: int, y: int) -> str:
         if not self.api_key:
             logger.error("Nearmap API key is required but not provided")
-            raise AssertionError("API key required for Nearmap")
-        url = self.url_template.format(x=x, y=y, z=z, token=self.api_key)
+            raise ValueError("API key required for Nearmap")
+        url = self.URL_TEMPLATE.format(x=x, y=y, z=z, token=self.api_key)
         logger.debug(f"Generated Nearmap URL: z={z}, x={x}, y={y}")
         return url
