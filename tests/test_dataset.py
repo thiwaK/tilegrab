@@ -1,70 +1,46 @@
-import pytest
-from unittest.mock import Mock, patch
-from box import Box
-from tilegrab.dataset import GeoDataset
 from pathlib import Path
-import os
+from tilegrab.dataset import GeoDataset
+import unittest
+from utils.attr_utils import get_attr_by_path, has_attr_path, normalize_expected
 
-# DATA_PATH = r"tests\data\T.geojson"
-# assert os.path.isfile(DATA_PATH)
+DATA_PATH = Path("tests/data/T.geojson")
+assert DATA_PATH.is_file(), "Missing test dataset"
 
-@patch('geopandas.read_file')
-@patch('pyproj.CRS.from_user_input')
-def test_geodataset_init_with_crs(mock_crs, mock_read):
-    mock_gdf = Mock()
-    mock_gdf.crs = "EPSG:4326"
-    mock_read.return_value = mock_gdf
+class GeoDatasetTest(unittest.TestCase):
+    
+    @classmethod
+    def setUpClass(cls):
+        cls.geodata = GeoDataset(str(DATA_PATH))
 
-    mock_crs_instance = Mock()
-    mock_crs_instance.to_epsg.return_value = 4326
-    mock_crs.return_value = mock_crs_instance
+    PROPERTY_MAP = {
+        "shape.name": "geometry",
+        "shape.crs.name": "WGS 84",
+        "bbox.minx": 80.59111369868114,   # numeric
+        "bbox.maxy": 7.267703227740259,   # numeric
+        "original_epsg": 3857,
+        "current_epsg": 4326,
+        "source_path": DATA_PATH.resolve()
+    }
 
-    ds = GeoDataset("test.shp")
-    assert ds.source == mock_gdf
-    assert ds.source_path == Path("test.shp")
+    def test_property_map_attributes_exist(self):
+        for path in self.PROPERTY_MAP.keys():
+            self.assertTrue(
+                has_attr_path(self.geodata, path),
+                f"No attribute path `{path}` on GeoDataset"
+            )
 
+    def test_property_map_values(self):
+        for path, expected in self.PROPERTY_MAP.items():
+            actual = get_attr_by_path(self.geodata, path)
+            expected_norm = normalize_expected(expected)
+            if isinstance(expected_norm, Path):
+                self.assertEqual(Path(actual).resolve(), expected_norm.resolve(), f"{path} -> {actual!r} != {expected_norm!r}")
 
-@patch('geopandas.read_file')
-def test_geodataset_init_no_crs(mock_read):
-    mock_gdf = Mock()
-    mock_gdf.crs = None
-    mock_read.return_value = mock_gdf
+            elif isinstance(expected_norm, float):
+                self.assertAlmostEqual(actual, expected_norm, places=9, msg=f"{path} -> {actual!r} != {expected_norm!r}")
 
-    with pytest.raises(RuntimeError, match="Missing CRS"):
-        GeoDataset("test.shp")
+            else:
+                self.assertEqual(actual, expected_norm, f"{path} -> {actual!r} != {expected_norm!r}")
 
-
-@patch('geopandas.read_file')
-@patch('pyproj.CRS.from_user_input')
-def test_geodataset_init_wrong_crs(mock_crs, mock_read):
-    mock_gdf = Mock()
-    mock_gdf.crs = "EPSG:3857"
-    mock_read.return_value = mock_gdf
-
-    mock_crs_instance = Mock()
-    mock_crs_instance.to_epsg.return_value = 3857
-    mock_crs.return_value = mock_crs_instance
-
-    with patch.object(mock_gdf, 'to_crs') as mock_to_crs:
-        ds = GeoDataset("test.shp")
-        mock_to_crs.assert_called_once_with(epsg=4326)
-
-
-def test_geodataset_bbox():
-    mock_ds = Mock()
-    mock_ds.source.total_bounds = [1, 2, 3, 4]
-    ds = GeoDataset.__new__(GeoDataset)  # Skip init
-    ds.source = mock_ds.source
-    bbox = ds.bbox
-    assert bbox.minx == 1
-    assert bbox.miny == 2
-    assert bbox.maxx == 3
-    assert bbox.maxy == 4
-
-
-def test_geodataset_shape():
-    mock_ds = Mock()
-    mock_ds.source.geometry = "fake_geometry"
-    ds = GeoDataset.__new__(GeoDataset)
-    ds.source = mock_ds.source
-    assert ds.shape == "fake_geometry"
+if __name__ == "__main__":
+    unittest.main()

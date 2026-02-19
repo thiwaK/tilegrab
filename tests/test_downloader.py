@@ -1,57 +1,34 @@
-import pytest
-from unittest.mock import Mock, patch
+import unittest
+from unittest.mock import Mock, MagicMock, patch
 from tilegrab.downloader import Downloader
 from tilegrab.sources import OSM
-from tilegrab.tiles import TilesByBBox
+from tilegrab.tiles import TilesByBBox, Tile
+from requests import Session
 
+class DownloaderTest(unittest.TestCase):
+    
+    @classmethod
+    def setUpClass(cls):
+        cls.osm = Mock(spec=OSM)
+        cls.tiles_by_bbox = Mock(spec=TilesByBBox)
+        cls.tiles_by_bbox.to_list = [Mock(z=10, x=1, y=2), Mock(z=10, x=1, y=3)]
+        cls.tiles_by_bbox.__len__ = Mock(return_value=2)
+    
+    @property
+    def downloader(self):
+        return Downloader(
+            tiles=self.tiles_by_bbox, 
+            tile_source=self.osm, 
+            temp_tile_dir="test_tiles"
+        )
+        
+    @patch.object(Session, 'get')
+    def test_download_run(self, mock_get):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.raise_for_status.return_value = None
+        mock_response.headers = {"content-type": "image/png"}
+        mock_response.content = b"fake image data"
+        mock_get.return_value = mock_response
+        self.downloader.run()
 
-@pytest.fixture
-def mock_tiles():
-    mock_tiles = Mock()
-    mock_tiles.to_list = [Mock(z=10, x=1, y=2), Mock(z=10, x=1, y=3)]
-    mock_tiles.__len__ = Mock(return_value=2)
-    return mock_tiles
-
-
-@pytest.fixture
-def downloader(mock_tiles):
-    source = OSM()
-    return Downloader(tile_collection=mock_tiles, tile_source=source, temp_tile_dir="test_tiles")
-
-
-@patch('tilegrab.downloader.requests.Session.get')
-def test_download_tile_success(mock_get, downloader):
-    mock_response = Mock()
-    mock_response.raise_for_status.return_value = None
-    mock_response.headers = {"content-type": "image/png"}
-    mock_response.content = b"fake image data"
-    mock_get.return_value = mock_response
-
-
-# @patch('tilegrab.downloader.requests.Session.get')
-# def test_download_tile_failure(mock_get, downloader):
-#     mock_get.side_effect = Exception("Network error")
-
-#     with pytest.raises(RuntimeWarning, match="Failed to fetch"):
-#         downloader.download_tile(10, 1, 2)
-
-
-# @patch('tilegrab.downloader.requests.Session.get')
-# @patch('concurrent.futures.ThreadPoolExecutor')
-# def test_run_download(mock_executor, mock_get, downloader, mock_tiles):
-#     mock_response = Mock()
-#     mock_response.raise_for_status.return_value = None
-#     mock_response.headers = {"content-type": "image/png"}
-#     mock_response.content = b"data"
-#     mock_get.return_value = mock_response
-
-#     mock_future = Mock()
-#     mock_future.result.return_value = ("path", True)
-#     mock_executor.return_value.__enter__.return_value.submit.return_value = mock_future
-#     mock_executor.return_value.__enter__.return_value.map.return_value = [mock_future]
-
-#     with patch.object(downloader, '_save'):
-#         results = downloader.run(workers=1, show_progress=False)
-#         print(results)
-#         assert isinstance(results, dict)
-#         assert len(results) == 2  # Two tiles
