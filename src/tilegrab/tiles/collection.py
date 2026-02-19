@@ -1,9 +1,10 @@
 import logging
 import math
-from typing import Iterator, List, Tuple, Union
+from typing import Iterator, List, Tuple
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from .dataset import GeoDataset
+
+from tilegrab.dataset import GeoDataset
+from tilegrab.tiles import Tile
 from box import Box
 from functools import cache
 
@@ -11,44 +12,6 @@ logger = logging.getLogger(__name__)
 
 EPSILON = 1e-14
 LL_EPSILON = 1e-11
-
-
-@dataclass
-class Tile:
-    x: int = 0
-    y: int = 0
-    z: int = 0
-
-    def __post_init__(self):
-        self._position = None
-        logger.debug(f"Tile created: x={self.x}, y={self.y}, z={self.z}")
-
-    # @classmethod
-    # def from_tuple(cls, t: tuple[int, int, int]) -> "Tile":
-    #     logger.debug(f"Creating Tile from tuple: {t}")
-    #     return cls(*t)
-
-    @property
-    def url(self) -> Union[str, None]:
-        return self._url
-
-    @url.setter
-    def url(self, value: str):
-        logger.debug(f"Tile URL set for z={self.z},x={self.x},y={self.y}")
-        self._url = value
-
-    @property
-    def position(self) -> Box:
-        if self._position is None:
-            logger.error(f"Tile position not set: z={self.z}, x={self.x}, y={self.y}")
-            raise RuntimeError("Image does not have a position")
-        return self._position
-
-    @position.setter
-    def position(self, value: Tuple[float, float]):
-        x, y = self.x - value[0], self.y - value[1]
-        self._position = Box({"x": x, "y": y})
-        logger.debug(f"Tile position calculated: x={x}, y={y}")
 
 
 class TileCollection(ABC):
@@ -68,13 +31,13 @@ class TileCollection(ABC):
         return self._tile_count
 
     def __iter__(self):
-        for t in self._cache:  # type: ignore
+        for t in self._cache:
             yield t.z, t.x, t.y
     
     def __repr__(self) -> str:
-        return f"TileCollection; len={len(self)}; x-extent=({self.feature.bbox.minx}-{self.feature.bbox.maxx}); y-extent=({self.feature.bbox.miny}-{self.feature.bbox.maxy})"
+        return f"TileCollection; len={len(self)}; x-extent=({self.geo_dataset.bbox.minx:.3f}-{self.geo_dataset.bbox.maxx:.3f}); y-extent=({self.geo_dataset.bbox.miny:.3f}-{self.geo_dataset.bbox.maxy:.3f})"
 
-    def __init__(self, feature: GeoDataset, zoom: int, SAFE_LIMIT: int = 250):
+    def __init__(self, geo_dataset: GeoDataset, zoom: int, SAFE_LIMIT: int = 250):
         self.zoom = zoom
         self.SAFE_LIMIT = SAFE_LIMIT
         self.geo_dataset = geo_dataset
@@ -229,32 +192,3 @@ class TileCollection(ABC):
                 t.position = self.MIN_X, self.MIN_Y
                 yield t
 
-
-class TilesByBBox(TileCollection):
-
-    def _build_tile_cache(self) -> List[Tile]:
-        logger.info(f"Building tiles by bounding box at zoom level {self.zoom}")
-        bbox = self.geo_dataset.bbox
-        logger.debug(
-            f"BBox coordinates: minx={bbox.minx}, miny={bbox.miny}, maxx={bbox.maxx}, maxy={bbox.maxy}"
-        )
-
-        self._cache = list(self._tiles_in_bounds(True))
-        logger.debug(f"Generated {len(self)} tiles from bounding box")
-        return self._cache
-
-
-class TilesByShape(TileCollection):
-
-    def _build_tile_cache(self) -> List[Tile]:
-
-        logger.info(f"Building tiles by shape intersection at zoom level {self.zoom}")
-        
-        bbox = self.geo_dataset.bbox
-        logger.debug(
-            f"Checking tiles within bbox: minx={bbox.minx}, miny={bbox.miny}, maxx={bbox.maxx}, maxy={bbox.maxy}"
-        )
-
-        self._cache = list(self._tiles_in_bounds(True))
-        logger.info(f"Generated {len(self)} tiles from shape intersection")
-        return self._cache
