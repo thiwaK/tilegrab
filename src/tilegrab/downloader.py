@@ -1,24 +1,20 @@
 import logging
 import os
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import List, Optional, Union
 import requests
-from requests.adapters import HTTPAdapter, Retry
-from tqdm import tqdm
-import tempfile
 from pathlib import Path
 
 from tilegrab.sources import TileSource
 from tilegrab.tiles import TileCollection, Tile
 from tilegrab.images import TileImageCollection, TileImage
-from PIL import Image
+
 
 logger = logging.getLogger(__name__)
 
 @dataclass
 class Downloader:
-    tiles: TileCollection
+    tile_collection: TileCollection
     tile_source: TileSource
     temp_tile_dir: Optional[Union[str, Path]] = None
     session: Optional[requests.Session] = None
@@ -29,6 +25,7 @@ class Downloader:
 
     def __post_init__(self):
         if not self.temp_tile_dir:
+            import tempfile
             tmpdir = tempfile.mkdtemp()
             self.temp_tile_dir = Path(tmpdir)
             logger.debug(f"Created temporary directory: {tmpdir}")
@@ -41,6 +38,8 @@ class Downloader:
         logger.info(f"Downloader initialized: source={self.tile_source.name}, timeout={self.REQUEST_TIMEOUT}s, max_retries={self.MAX_RETRIES}")
 
     def _init_session(self) -> requests.Session:
+        from requests.adapters import HTTPAdapter, Retry
+
         logger.debug("Initializing HTTP session with retry strategy")
         session = requests.Session()
         retries = Retry(
@@ -90,36 +89,41 @@ class Downloader:
 
     def run(
         self,
-        workers: int = 8,   
+        workers: Union[int, None] = None,   
         show_progress: bool = True,
+        parallel_download: bool = True
     ) -> TileImageCollection:
-        logger.info(f"Starting download run: {len(self.tiles)} tiles, workers={workers}, show_progress={show_progress}")
+        logger.info(f"Starting download run: {len(self.tile_collection)} tiles, workers={workers}, show_progress={show_progress}")
         
         results = []
 
         if show_progress:
-            pbar = tqdm(total=len(self.tiles), desc=f"Downloading", unit="tile")
+            from tqdm import tqdm
+            pbar = tqdm(total=len(self.tile_collection), desc=f"      Downloading", unit="tile")
         else:
             pbar = None
         
-        for tile in self.tiles.to_list:
-            res = self.download_tile(tile)
-            results.append(res)
-            if pbar:
-                pbar.update(1)
-        
-        # with ThreadPoolExecutor(max_workers=workers) as exe:
-        #     future_to_tile = {
-        #         exe.submit(self.download_tile, tile): tile for tile in self.tiles.to_list
-        #     }
-        #     for fut in as_completed(future_to_tile):
-        #         try:
-        #             results.append(fut.result())
-        #         except Exception:
-        #             results.append(False)
 
-        #         if pbar:
-        #             pbar.update(1)
+        if parallel_download:
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+            with ThreadPoolExecutor(max_workers=workers) as exe:
+                future_to_tile = {
+                    exe.submit(self.download_tile, tile): tile for tile in self.tile_collection.to_list
+                }
+                for fut in as_completed(future_to_tile):
+                    try:
+                        results.append(fut.result())
+                    except Exception:
+                        results.append(False)
+                        
+                    if pbar:
+                        pbar.update(1)
+        else:
+            for tile in self.tile_collection.to_list:
+                res = self.download_tile(tile)
+                results.append(res)
+                if pbar:
+                    pbar.update(1)
 
         if pbar:
             pbar.close()
@@ -129,7 +133,7 @@ class Downloader:
 
     def _evaluate_result(self, result: List):
         success = sum(1 for v in result if v)
-        total = len(self.tiles)
+        total = len(self.tile_collection)
         logger.info(f"Download completed: {success}/{total} successful ({100*success/total:.1f}%)")
         if success < total:
             logger.warning(f"Failed to download {total - success} tiles")
