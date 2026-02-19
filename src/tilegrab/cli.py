@@ -110,7 +110,6 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--debug", action="store_true", help="Enable debug logging")
     return p.parse_args()
 
-
 def main():
     LOG_LEVEL = logging.INFO
     ENABLE_CLI_LOG = True
@@ -142,14 +141,6 @@ def main():
         - zoom: {args.zoom}"""
         )
 
-        if args.shape:
-            tiles = TilesByShape(geo_dataset=dataset, zoom=args.zoom, SAFE_LIMIT=args.tile_limit)
-        elif args.bbox:
-            tiles = TilesByBBox(geo_dataset=dataset, zoom=args.zoom, SAFE_LIMIT=args.tile_limit)
-        else:
-            logger.error("No extent selector selected")
-            raise SystemExit("No extent selector selected")
-
         # Choose source provider
         if args.osm:
             from tilegrab.sources import OSM
@@ -172,9 +163,22 @@ def main():
             logger.error("No tile source selected")
             raise SystemExit("No tile source selected")
 
+        if args.shape:
+            tiles = TilesByShape(
+                geo_dataset=dataset, tile_source=source, zoom=args.zoom, safe_limit=args.tile_limit
+                )
+        elif args.bbox:
+            tiles = TilesByBBox(
+                geo_dataset=dataset, tile_source=source, zoom=args.zoom, safe_limit=args.tile_limit
+                )
+        else:
+            logger.error("No extent selector selected")
+            raise SystemExit("No extent selector selected")
+
+        
+
         downloader = Downloader(
-            tile_collection=tiles, 
-            tile_source=source, 
+            tile_collection=tiles,
             temp_tile_dir=args.tiles_out)
         
         result: TileImageCollection
@@ -215,7 +219,6 @@ def main():
     except Exception as e:
         logger.exception("Fatal error during execution")
         raise SystemExit(1)
-
 
 if __name__ == "__main__":
     main()

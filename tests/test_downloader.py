@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import Mock, MagicMock, patch
 from tilegrab.downloader import Downloader
 from tilegrab.sources import OSM
-from tilegrab.tiles import TilesByBBox, Tile
+from tilegrab.tiles import TilesByBBox, Tile, TileCollection
 from requests import Session
 
 class DownloaderTest(unittest.TestCase):
@@ -17,7 +17,7 @@ class DownloaderTest(unittest.TestCase):
     @property
     def downloader(self):
         return Downloader(
-            tiles=self.tiles_by_bbox, 
+            tile_collection=self.tiles_by_bbox, 
             tile_source=self.osm, 
             temp_tile_dir="test_tiles"
         )
