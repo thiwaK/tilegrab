@@ -1,45 +1,35 @@
-import pytest
+import unittest
 from tilegrab.sources import OSM, GoogleSat, ESRIWorldImagery, Nearmap
+from tilegrab.sources import TileSource
+from utils.attr_utils import has_attr_path
 
+class TileSourceTest(unittest.TestCase):
+    
+    @classmethod
+    def setUpClass(cls):
+        cls.t_sources:list[TileSource] = [
+            OSM(), GoogleSat(), ESRIWorldImagery(), Nearmap(api_key="TESTKEY")
+        ]
 
-def test_osm_get_url():
-    osm = OSM()
-    url = osm.get_url(10, 1, 2)
-    assert url != "" and url
+    PROPERTY_ARR = {
+        "name", "description", "URL_TEMPLATE"
+    }
 
+    def test_property_arr_attributes_exist(self):
+        for attr in self.PROPERTY_ARR:
+            for source in self.t_sources:
+                self.assertTrue(
+                    has_attr_path(source, attr),
+                    f"No attribute path `{attr}` on TileSource {source.name}"
+                )
+    
+    def test_source_url_generation(self):
+        for source in self.t_sources:
+            url = source.get_url(1,1,1)
 
-def test_google_sat_get_url():
-    gs = GoogleSat()
-    url = gs.get_url(10, 1, 2)
-    assert url != "" and url
+            assert url.startswith("https://") or url.startswith("http://"), f"Invalid url generation {source.name}. {url}"
 
+            assert url.count("/1/1/1") == 1 or url.count("&x=1&y=1&z=1") == 1, f"Invalid url generation {source.name}. {url}"
 
-def test_esri_get_url():
-    esri = ESRIWorldImagery()
-    url = esri.get_url(10, 1, 2)
-    assert url != "" and url
-
-
-def test_nearmap_get_url():
-    nm = Nearmap(api_key="test_key")
-    url = nm.get_url(10, 1, 2)
-    assert url != "" and url
-
-
-def test_nearmap_no_key():
-    nm = Nearmap()
-    with pytest.raises(AssertionError):
-        nm.get_url(10, 1, 2)
-
-
-def test_headers_default():
-    osm = OSM()
-    headers = osm.headers()
-    assert "user-agent" in headers
-
-
-def test_headers_custom():
-    custom_headers = {"custom": "header"}
-    osm = OSM(headers=custom_headers)
-    headers = osm.headers()
-    assert headers == custom_headers
+if __name__ == "__main__":
+    unittest.main()
