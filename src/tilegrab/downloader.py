@@ -5,7 +5,6 @@ from typing import List, Optional, Union
 import requests
 from pathlib import Path
 
-from tilegrab.sources import TileSource
 from tilegrab.tiles import TileCollection, Tile
 from tilegrab.images import TileImageCollection, TileImage
 
@@ -15,7 +14,6 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Downloader:
     tile_collection: TileCollection
-    tile_source: TileSource
     temp_tile_dir: Optional[Union[str, Path]] = None
     session: Optional[requests.Session] = None
     REQUEST_TIMEOUT: int = 15
@@ -35,32 +33,52 @@ class Downloader:
         os.makedirs(self.temp_tile_dir, exist_ok=True)
         self.session = self.session or self._init_session()
         self.image_col = TileImageCollection(self.temp_tile_dir)
-        logger.info(f"Downloader initialized: source={self.tile_source.name}, timeout={self.REQUEST_TIMEOUT}s, max_retries={self.MAX_RETRIES}")
+        logger.info(f"Downloader initialized: tile_count={len(self.tile_collection)}, timeout={self.REQUEST_TIMEOUT}s, max_retries={self.MAX_RETRIES}")
 
     def _init_session(self) -> requests.Session:
         from requests.adapters import HTTPAdapter, Retry
-
+    
         logger.debug("Initializing HTTP session with retry strategy")
         session = requests.Session()
+        
         retries = Retry(
             total=self.MAX_RETRIES,
+            connect=self.MAX_RETRIES,
+            read=self.MAX_RETRIES,
             backoff_factor=self.BACKOFF_FACTOR,
-            status_forcelist=[429, 500, 502, 503, 504],
-            allowed_methods=frozenset(["GET", "HEAD"]),
+            status_forcelist=(429, 500, 502, 503, 504),
+            allowed_methods=frozenset(("GET", "HEAD")),
+            raise_on_status=False,
+            redirect=False,
         )
-        session.mount("https://", HTTPAdapter(max_retries=retries))
-        session.mount("http://", HTTPAdapter(max_retries=retries))
+
+        adapter = HTTPAdapter(
+            max_retries=retries,
+            pool_connections=20,
+            pool_maxsize=20,
+        )
+        
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
+
+        session.headers.update({
+            "referer": "",
+            "accept": "*/*",
+            "user-agent": "Mozilla/5.0 QGIS/34202/Windows 11 Version 2009",
+            "connection": "Keep-Alive ",
+            "accept-encoding": "gzip, deflate",
+            "accept-language": "en-US,*",
+        })
+
         return session
 
     def download_tile(self, tile: Tile) -> bool:
-        x, y, z = tile.x, tile.y, tile.z
-        url = self.tile_source.get_url(z, x, y)
-        headers = self.tile_source.headers() or {}
-        tile.url = url
+        x, y, z = tile.index.x, tile.index.y, tile.index.z
+        url = tile.url
 
         logger.debug(f"Downloading tile: z={z}, x={x}, y={y}")
         try:
-            resp = self.session.get(url, headers=headers, timeout=self.REQUEST_TIMEOUT)  # type: ignore
+            resp = self.session.get(url, timeout=self.REQUEST_TIMEOUT) # type: ignore
             resp.raise_for_status()
 
             content_type = resp.headers.get("content-type", "")
@@ -75,7 +93,7 @@ class Downloader:
                 logger.warning(f"Empty content received for tile z={z},x={x},y={y}")
                 return False
             
-            img = TileImage(tile, content)
+            img = TileImage(tile=tile, image=content)
             self.image_col.append(img)
             logger.debug(f"Tile downloaded successfully: z={z}, x={x}, y={y}")
             return True

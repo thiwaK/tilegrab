@@ -1,6 +1,7 @@
 import logging
 from typing import Dict, Optional
 
+
 logger = logging.getLogger(__name__)
 
 class TileSource:
@@ -22,12 +23,4 @@ class TileSource:
         logger.debug(f"Generated URL for {self.name}: z={z}, x={x}, y={y}")
         return url
 
-    def headers(self) -> Dict[str, str]:
-        return self._headers or {
-            "referer": "",
-            "accept": "*/*",
-            "user-agent": "Mozilla/5.0 QGIS/34202/Windows 11 Version 2009",
-            "connection": "Keep-Alive ",
-            "accept-encoding": "gzip, deflate",
-            "accept-language": "en-US,*",
-        }
+    
