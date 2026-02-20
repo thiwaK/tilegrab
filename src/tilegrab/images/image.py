@@ -8,6 +8,7 @@ from tilegrab.tiles import Tile, GeoBounds, TileIndex
 logger = logging.getLogger(__name__)
 
 
+
 @dataclass
 class TileImage:
     width: int = 256
