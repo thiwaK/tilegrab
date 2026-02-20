@@ -29,7 +29,7 @@ class TileCollection(ABC):
 
     def __iter__(self):
         for t in self._cache:
-            yield t.index.z, t.index.x, t.index.y
+            yield t
     
     def __repr__(self) -> str:
         return f"TileCollection; len={len(self)}; x-extent=({self.geo_dataset.bbox.minx:.3f}-{self.geo_dataset.bbox.maxx:.3f}); y-extent=({self.geo_dataset.bbox.miny:.3f}-{self.geo_dataset.bbox.maxy:.3f})"

@@ -4,7 +4,9 @@ import argparse
 from pathlib import Path
 from typing import List
 from tilegrab.downloader import Downloader
+from tilegrab.downloader import DownloadConfig
 from tilegrab.images import TileImageCollection, ExportType
+
 from tilegrab.logs import setup_logging
 from tilegrab.tiles import TilesByShape, TilesByBBox
 from tilegrab.dataset import GeoDataset
@@ -71,6 +73,12 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=Path.cwd() / "saved_tiles",
         help="Output directory for downloaded tiles (default: ./saved_tiles)",
+    )
+    p.add_argument(
+        "--out",
+        type=Path,
+        default=Path.cwd(),
+        help="Output directory for the final output",
     )
     p.add_argument(
         "--download-only",
@@ -176,15 +184,19 @@ def main():
             raise SystemExit("No extent selector selected")
 
         
-
+        dl_config = DownloadConfig()
         downloader = Downloader(
             tile_collection=tiles,
-            temp_tile_dir=args.tiles_out)
+            config=dl_config,
+            temp_dir=args.tiles_out)
         
         result: TileImageCollection
         if args.mosaic_only:
-            result = TileImageCollection(path=args.tiles_out)
-            result.load(tile_collection=tiles)
+            from tilegrab.images import load_images
+            tile_images = load_images(path=args.tiles_out, tiles=tiles)
+            result = TileImageCollection(
+                path=args.tiles_out, images=tile_images)
+            logger.info(f"Load from disk result: {result}")
         else:
             result = downloader.run(
                 workers=args.workers, 
@@ -192,8 +204,8 @@ def main():
                 parallel_download=args.no_parallel)
             logger.info(f"Download result: {result}")
 
-        ex_types: List[int] = []
-        
+        img_col_bounds = result.bounds
+        ex_types: List[ExportType] = []
         if not args.download_only:
             if args.tiff: 
                 ex_types.append(ExportType.TIFF)
@@ -202,15 +214,17 @@ def main():
             if args.jpg: 
                 ex_types.append(ExportType.JPG)
 
+            from tilegrab.images import mosaic
+            final_img = [mosaic(result), ]
+
             if args.group_tiles:
+                from tilegrab.images import group_image
                 w,h = args.group_tiles.lower().split("x")
-                result.group(
-                    width=int(w), 
-                    height=int(h),
-                    export_types=ex_types,
-                    overlap=args.group_overlap)
-            else:
-                result.mosaic(export_types=ex_types)
+                final_img = group_image(
+                    image=final_img[0], tile_h=256, tile_w=256, group_w=int(w), group_h=int(h))
+                
+            from tilegrab.images import export_image
+            export_image(images=final_img, output_dir=args.out, bounds=img_col_bounds, formats=ex_types)
             
             
 
@@ -218,6 +232,7 @@ def main():
 
     except Exception as e:
         logger.exception("Fatal error during execution")
+        logger.exception(e)
         raise SystemExit(1)
 
 if __name__ == "__main__":
