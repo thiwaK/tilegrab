@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional, Iterator, Union
 
-from tilegrab.downloader import DownloadStatus
+from tilegrab.downloader.status import DownloadStatus
 from tilegrab.tiles import TileIndex
 from tilegrab.tiles import Tile
 

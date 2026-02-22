@@ -1,29 +1,14 @@
-from dataclasses import dataclass
-from enum import Enum
 import logging
-from typing import Union
 import requests
 
+from tilegrab.downloader.runner import DownloadResult
+from tilegrab.downloader.status import DownloadStatus
 from tilegrab.tiles import Tile
 from tilegrab.images import TileImage
 
 logger = logging.getLogger(__name__)
 
-class DownloadStatus(Enum):
-    SUCCESS = 200
-    SKIP_AND_EXISTS = 100
-    SKIP = 101
-    UNDEFINED = 900
-    ALREADY_EXISTS = 500
-    FAILED = 401
-    EMPTY = 400
 
-@dataclass(frozen=True, slots=True)
-class DownloadResult:
-    tile:Tile
-    status:DownloadStatus
-    result:Union[TileImage, None]
-    url:str
 
 def download_tile(
     tile: Tile,

@@ -3,8 +3,7 @@ import logging
 import argparse
 from pathlib import Path
 from typing import List
-from tilegrab.downloader import Downloader
-from tilegrab.downloader import DownloadConfig
+from tilegrab.downloader import Downloader, DownloadConfig
 from tilegrab.images import TileImageCollection, ExportType
 
 from tilegrab.logs import setup_logging

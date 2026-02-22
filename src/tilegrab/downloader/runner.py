@@ -1,22 +1,19 @@
-from dataclasses import dataclass
 import logging
 import tempfile
 from pathlib import Path
 
-from tilegrab.downloader import ProgressStore, ProgressItem
-from tilegrab.images import TileImage
 from tilegrab.images.loader import load_images
 from tilegrab.tiles import TileCollection
 from tilegrab.images import TileImageCollection
 
+from .result import DownloadResult
+from .progress import ProgressItem, ProgressStore
+from .status import DownloadStatus
+from .worker import download_tile
 from .config import DownloadConfig
 from .session import create_session
-from .worker import DownloadResult, DownloadStatus, download_tile
 
 logger = logging.getLogger(__name__)
-
-# TODO: need to move DownloadStatus.SKIP logic to somewhere else
-# `for tile in self.tiles if tile.need_download` also can be used
 
 
 class Downloader:
