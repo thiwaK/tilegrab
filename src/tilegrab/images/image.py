@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 class TileImage:
     width: int = 256
     height: int = 256
+    
 
     def __init__(self, tile: Tile, image: Union[bytes, bytearray]) -> None:
         from io import BytesIO
@@ -72,6 +73,10 @@ class TileImage:
     @property
     def tile(self) -> Tile:
         return self._tile
+    
+    @tile.setter
+    def tile(self, value:Tile):
+        self._tile = value
 
     @property
     def image(self) -> PILImage.Image:

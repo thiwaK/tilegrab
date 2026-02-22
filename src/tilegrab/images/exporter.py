@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
-from typing import Iterator, List, Union
+import types
+from typing import Generator, Iterator, List, Union
 from PIL import Image
 from tilegrab.images import ImageCollectionBounds
 from tilegrab.images import ExportType
@@ -16,32 +17,35 @@ def export_image(
     bounds: ImageCollectionBounds,
     formats: list[ExportType],
 ):
-    output_dir.mkdir(parents=True, exist_ok=True)
+    
     index = ""
-    if type(images) == Iterator:
+    if isinstance(images, types.GeneratorType):
         output_dir = output_dir / "groups"
-        logger.info(f"Saving groups into {output_dir}")
+        output_dir.mkdir(parents=True, exist_ok=True)
 
         if ExportType.TIFF in formats:
             raise NotImplementedError("Export grouped tiffs currently not supported")
+        
+    output_dir.mkdir(parents=True, exist_ok=True)
+    logger.info(f"Saving outputs into {output_dir}")
 
     idx = 1
     for img in images:
-        if type(images) == Iterator:
+        if isinstance(images, types.GeneratorType):
             index = f"{idx}_"
 
         if ExportType.PNG in formats:
-            output_path = f"{index}mosaic.png"
+            output_path = output_dir / f"{index}mosaic.png"
             img.save(output_path)
             logger.info(f"Mosaic saved to {output_path}")
 
         if ExportType.JPG in formats:
-            output_path = f"{index}mosaic.jpg"
+            output_path = output_dir / f"{index}mosaic.jpg"
             img.save(output_path)
             logger.info(f"Mosaic saved to {output_path}")
 
         if ExportType.TIFF in formats:
-            output_path = f"{index}mosaic.tiff"
+            output_path = output_dir / f"{index}mosaic.tiff"
 
             import numpy as np
             from rasterio.transform import from_bounds

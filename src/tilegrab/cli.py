@@ -8,7 +8,7 @@ from tilegrab.downloader import DownloadConfig
 from tilegrab.images import TileImageCollection, ExportType
 
 from tilegrab.logs import setup_logging
-from tilegrab.tiles import TilesByShape, TilesByBBox
+from tilegrab.tiles import TilesByShape, TilesByBBox, TileCollection
 from tilegrab.dataset import GeoDataset
 from tilegrab import __version__
 
@@ -32,6 +32,7 @@ def parse_args() -> argparse.Namespace:
         required=True,
         help="The vector polygon source for filter tiles",
     )
+    extent_source_group.add_argument("--invert", action="store_true", help="Download the non-overlapping tiles with the source geometry, but with in the bounding box. Works only with --shape")
     extent_group = extent_source_group.add_mutually_exclusive_group(required=True)
     extent_group.add_argument(
         "--shape", action="store_true", help="Use actual shape to derive tiles"
@@ -64,7 +65,7 @@ def parse_args() -> argparse.Namespace:
     mosaic_group.add_argument("--jpg", action="store_true", help="JPG image; no geo-reference")
     mosaic_group.add_argument("--png", action="store_true", help="PNG image; no geo-reference")
     mosaic_group.add_argument("--tiff", action="store_true", help="GeoTiff image; with geo-reference")
-    mosaic_group.set_defaults(tiff=True)
+    # mosaic_group.set_defaults(tiff=True)
 
     # other options
     p.add_argument("--zoom", type=int, required=True, help="Zoom level (integer between 1 and 22)")
@@ -77,13 +78,18 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--out",
         type=Path,
-        default=Path.cwd(),
-        help="Output directory for the final output",
+        default=Path.cwd() / "output",
+        help="Output directory for the final output (default: ./output)",
     )
     p.add_argument(
         "--download-only",
         action="store_true",
         help="Only download tiles; do not run mosaicking or postprocessing",
+    )
+    p.add_argument(
+        "--resume-download",
+        action="store_true",
+        help="Resume the previous download; do not overwrite",
     )
     p.add_argument(
         "--mosaic-only",
@@ -171,40 +177,50 @@ def main():
             logger.error("No tile source selected")
             raise SystemExit("No tile source selected")
 
+        tile_collection: TileCollection
         if args.shape:
-            tiles = TilesByShape(
-                geo_dataset=dataset, tile_source=source, zoom=args.zoom, safe_limit=args.tile_limit
+            tile_collection = TilesByShape(
+                geo_dataset=dataset, 
+                tile_source=source, 
+                zoom=args.zoom, 
+                safe_limit=args.tile_limit,
+                invert_selection=args.invert
                 )
         elif args.bbox:
-            tiles = TilesByBBox(
+            tile_collection = TilesByBBox(
                 geo_dataset=dataset, tile_source=source, zoom=args.zoom, safe_limit=args.tile_limit
                 )
         else:
             logger.error("No extent selector selected")
             raise SystemExit("No extent selector selected")
-
         
-        dl_config = DownloadConfig()
-        downloader = Downloader(
-            tile_collection=tiles,
-            config=dl_config,
-            temp_dir=args.tiles_out)
         
-        result: TileImageCollection
+        from tilegrab.images import load_images
+        tile_image_collection: TileImageCollection
         if args.mosaic_only:
-            from tilegrab.images import load_images
-            tile_images = load_images(path=args.tiles_out, tiles=tiles)
-            result = TileImageCollection(
+            tile_images = load_images(path=args.tiles_out, tiles=tile_collection)
+            tile_image_collection = TileImageCollection(
                 path=args.tiles_out, images=tile_images)
-            logger.info(f"Load from disk result: {result}")
+            logger.info(f"Load from disk result: {tile_image_collection}")
+        
         else:
-            result = downloader.run(
+            dl_config = DownloadConfig()
+            downloader = Downloader(
+                tile_collection=tile_collection,
+                config=dl_config,
+                tile_dir=args.tiles_out,
+                resume=args.resume_download)
+    
+            tile_image_collection = downloader.run(
                 workers=args.workers, 
                 show_progress=args.no_progress, 
                 parallel_download=args.no_parallel)
-            logger.info(f"Download result: {result}")
+            
+            logger.info(f"Download result: {tile_image_collection}")
 
-        img_col_bounds = result.bounds
+            
+
+        img_col_bounds = tile_image_collection.bounds
         ex_types: List[ExportType] = []
         if not args.download_only:
             if args.tiff: 
@@ -215,7 +231,7 @@ def main():
                 ex_types.append(ExportType.JPG)
 
             from tilegrab.images import mosaic
-            final_img = [mosaic(result), ]
+            final_img = [mosaic(tile_image_collection), ]
 
             if args.group_tiles:
                 from tilegrab.images import group_image

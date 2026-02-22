@@ -1,6 +1,8 @@
+import logging
 from PIL import Image
 from tilegrab.images import TileImageCollection
 
+logger = logging.getLogger(__name__)
 
 def mosaic(images: TileImageCollection) -> Image.Image:
     if not images:

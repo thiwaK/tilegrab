@@ -51,7 +51,7 @@ class TileImageCollection:
         cls,
         images: list[TileImage],
         path: Union[Path, str],
-        save: bool = True,
+        save: bool = False,
     ):
         col = cls(path=path, images=list(images))
 

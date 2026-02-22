@@ -1,9 +1,12 @@
 from typing import Dict, Optional
 import requests
 from requests.adapters import HTTPAdapter, Retry
+import logging
+
 
 from .config import DownloadConfig
 
+logger = logging.getLogger(__name__)
 
 def create_session(
         config: DownloadConfig, 
