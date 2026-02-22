@@ -13,7 +13,7 @@ class GoogleSat(TileSource):
         "Warning: This tile source violates Google Maps TOS "
         "Section 3.2.4a"
     )
-
+    uid = "gsat"
 
 class Nearmap(TileSource):
     name = "NearmapSat"
@@ -21,6 +21,7 @@ class Nearmap(TileSource):
     url_template = (
         "https://api.nearmap.com/tiles/v3/Vert/{z}/{x}/{y}.png?apikey={token}"
     )
+    uid = "nmsat"
 
     def get_url(self, z: int, x: int, y: int) -> str:
         if not self.api_key:

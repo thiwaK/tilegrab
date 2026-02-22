@@ -8,6 +8,7 @@ class TileSource:
     url_template = ""
     name = None
     api_key = None
+    uid = ""
 
     def __init__(
         self, 
@@ -23,4 +24,7 @@ class TileSource:
         logger.debug(f"Generated URL for {self.name}: z={z}, x={x}, y={y}")
         return url
 
-    
+    @property
+    def id(self) -> str:
+        assert self.uid != "", "invalid source UID"
+        return self.uid

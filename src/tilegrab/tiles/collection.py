@@ -35,12 +35,13 @@ class TileCollection(ABC):
         return f"TileCollection; len={len(self)}; x-extent=({self.geo_dataset.bbox.minx:.3f}-{self.geo_dataset.bbox.maxx:.3f}); y-extent=({self.geo_dataset.bbox.miny:.3f}-{self.geo_dataset.bbox.maxy:.3f})"
 
     def __init__(
-            self, geo_dataset: GeoDataset, tile_source:TileSource , zoom: int, safe_limit: int = 250):
+            self, geo_dataset: GeoDataset, tile_source:TileSource , zoom: int, safe_limit: int = 250, invert_selection:bool = False):
         
         self.zoom = zoom
         self.safe_limit = safe_limit
         self.geo_dataset = geo_dataset
         self.tile_source = tile_source
+        self.invert_selection = invert_selection
 
         logger.info(
             f"Initializing TileCollection: zoom={zoom}, safe_limit={safe_limit}"
@@ -59,6 +60,9 @@ class TileCollection(ABC):
 
         logger.info(f"TileCollection initialized with {len(self)} tiles")
 
+    def __getitem__(self, index):
+        return self._cache[index]
+    
     @property
     def to_list(self) -> List[Tile]:
         cache = list(self._cache)
@@ -73,6 +77,15 @@ class TileCollection(ABC):
         assert self._cache
         return list(self._cache)
     
+    @property
+    def source_uid(self) -> str:
+        return self.tile_source.id
+    
+    @property
+    def source_name(self) -> str:
+        return self.tile_source.name or ""
+
+
     @abstractmethod
     def build_tile_cache(self) -> List[Tile]:
         raise NotImplementedError
@@ -140,7 +153,7 @@ class TileCollection(ABC):
             for j in range(ul_tile.y, lr_tile.y + 1):
                 t = Tile(i, j, self.zoom, self.tile_source)
                 if clip_to_shape:
-                    condition = t.polygon_bounds.intersects(self.geo_dataset.geometry.geometry).any()
+                    condition = t.polygon_bounds.intersects(self.geo_dataset.geometry.geometry).any() == (not self.invert_selection)
                     if not condition:
                         logger.debug(
                             f"Tile excluded: z={self.zoom}, x={i}, y={j}"
@@ -149,3 +162,6 @@ class TileCollection(ABC):
                 self._tile_count += 1
                 yield t
 
+    def pop(self, index:int) -> Tile:
+        assert self._tile_count >= index, "Invalid index"
+        return self._cache.pop(index)

@@ -15,48 +15,56 @@ from .worker import DownloadResult, DownloadStatus, download_tile
 
 logger = logging.getLogger(__name__)
 
-#TODO: need to move DownloadStatus.SKIP logic to somewhere else
+# TODO: need to move DownloadStatus.SKIP logic to somewhere else
 # `for tile in self.tiles if tile.need_download` also can be used
 
 
 class Downloader:
-    
+
     def __init__(
         self,
         tile_collection: TileCollection,
         config: DownloadConfig,
         tile_dir: Path | None = None,
+        resume: bool = True
     ):
         self.tile_col = tile_collection
         self.config = config
         self.tile_dir = tile_dir or Path(tempfile.mkdtemp())
         self.tile_dir.mkdir(parents=True, exist_ok=True)
         self.progress_store = ProgressStore(self.tile_dir)
+        self.resume = resume
 
-    def process_results(self, download_result:DownloadResult):
-        
-        progress_item = ProgressItem(
-            tileIndex=download_result.tile.index,
-            downloadStatus=download_result.status,
-            tileURL=download_result.url, 
-            tileImagePath=self.tile_dir, 
-            tileSourceId=self.tile_col.source_uid)
-        
-        self.progress_store.upsert_by_tile_index(progress_item)
-        
+    def process_results(self, download_result: DownloadResult):
+
         if download_result.status == DownloadStatus.SUCCESS:
             self.images.append(download_result.result)
-        
+
         elif download_result.status == DownloadStatus.SKIP:
             tile_image = load_images(self.tile_dir, [download_result.tile,])
             if len(tile_image) == 1:
                 self.images.append(tile_image[0])
-        
+                download_result = DownloadResult(
+                    download_result.tile,
+                    DownloadStatus.SKIP_AND_EXISTS,
+                    download_result.result,
+                    download_result.url
+                )
+
         elif download_result.status == DownloadStatus.EMPTY:
             logger.warning("downloader.runner returned EMPTY DownloadStatus")
-        
+
         elif download_result.status == DownloadStatus.UNDEFINED:
             logger.error("downloader.runner returned UNDEFINED DownloadStatus")
+        
+        progress_item = ProgressItem(
+            tileIndex=download_result.tile.index,
+            downloadStatus=download_result.status,
+            tileURL=download_result.url,
+            tileImagePath=self.tile_dir,
+            tileSourceId=self.tile_col.source_uid)
+
+        self.progress_store.upsert_by_tile_index(progress_item)
 
     def run(
         self,
@@ -68,9 +76,23 @@ class Downloader:
 
         def session_factory(): return create_session(self.config)
 
+        
+        for idx, tile in enumerate(self.tile_col):
+            progress_item = self.progress_store.progress_by_tile(tile)
+            if progress_item:
+                if progress_item.downloadStatus == DownloadStatus.SUCCESS and self.resume:
+                    # skip this tile
+                    self.tile_col[idx].need_download = False
+                
+                if progress_item.downloadStatus == DownloadStatus.SKIP_AND_EXISTS and self.resume:
+                    # skip this tile
+                    self.tile_col[idx].need_download = False
+
+
         if show_progress:
             from tqdm import tqdm
-            pbar = tqdm(total=len(self.tile_col), desc="Downloading", unit="tile")
+            pbar = tqdm(total=len(self.tile_col),
+                        desc="Downloading", unit="tile")
         else:
             pbar = None
 
@@ -96,15 +118,14 @@ class Downloader:
                         pbar.update(1)
         else:
             for tile in self.tile_col:
-                
+
                 dl_result = download_tile(
                     tile=tile, session=session, timeout=self.config.timeout)
-                
+
                 self.process_results(download_result=dl_result)
-                
+
                 if pbar:
                     pbar.update(1)
-
 
         if pbar:
             pbar.close()
@@ -117,4 +138,3 @@ class Downloader:
 
         return TileImageCollection.from_images(
             images=self.images, path=self.tile_dir, save=False)
-

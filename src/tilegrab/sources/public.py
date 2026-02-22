@@ -9,7 +9,7 @@ class OSM(TileSource):
     description = "OpenStreetMap imageries"
     output_dir = "osm"
     url_template = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-
+    uid = "osm"
 
 class ESRIWorldImagery(TileSource):
     name = "ESRIWorldImagery"
@@ -20,3 +20,4 @@ class ESRIWorldImagery(TileSource):
         "World_Imagery/MapServer/tile/{z}/{y}/{x}"
     )
     message = "Warning: Requires a valid ESRI token for production use"
+    uid = "esri_wi"

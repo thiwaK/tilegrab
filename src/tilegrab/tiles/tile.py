@@ -25,7 +25,7 @@ class Tile:
     A single tile.
     """
 
-    __slots__ = ("_index", "_bounds", "_url", "_polygon_bounds", "_geojson_bounds")
+    __slots__ = ("_index", "_bounds", "_url", "_polygon_bounds", "_geojson_bounds", "_download")
 
     def __init__(self, x: int, y: int, z: int, source: TileSource):
         self._index = TileIndex(x=x, y=y, z=z)
@@ -33,7 +33,18 @@ class Tile:
         self._url = source.get_url(x=x, y=y, z=z)
         self._polygon_bounds = None
         self._geojson_bounds = None
+        self._download: bool = True
         logger.debug("Tile created: index=%s; geobound=%s", self._index, self._bounds)
+    
+    def __eq__(self, other):
+        if not isinstance(other, Tile):
+            return NotImplemented
+        
+        return (
+                self.index.x, self.index.y, self.index.z
+            ) == (
+                other.index.x, other.index.y, other.index.z
+            )
 
     @property
     def index(self) -> TileIndex:
@@ -90,3 +101,11 @@ class Tile:
             from shapely.geometry import box
             self._polygon_bounds = box(self._bounds.min_lon, self._bounds.min_lat, self._bounds.max_lon, self._bounds.max_lat)
         return self._polygon_bounds
+    
+    @property
+    def need_download(self) -> bool:
+        return self._download
+    
+    @need_download.setter
+    def need_download(self, value:bool):
+        self._download = value

@@ -1,8 +1,10 @@
 import re
 import logging
 from pathlib import Path
+from typing import List, Union
 from tilegrab.images.image import TileImage
 from tilegrab.tiles import TileCollection
+from tilegrab.tiles.tile import Tile
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +14,7 @@ _TILE_RE = re.compile(r"^(\d+)_(\d+)_(\d+)\.\w+$")
 
 def load_images(
     path: Path,
-    tiles: TileCollection,
+    tiles: Union[TileCollection, List[Tile]],
 ) -> list[TileImage]:
     images: list[TileImage] = []
     files = [p for p in path.glob("*") if p.is_file()]
@@ -28,6 +30,7 @@ def load_images(
                 with open(f, "rb") as fp:
                     img = TileImage(tile, fp.read())
                     img.path = f
+                    img.tile = tile
                     images.append(img)
                 break
 

@@ -3,10 +3,11 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Optional, Iterator
+from typing import Any, Dict, Optional, Iterator, Union
 
 from tilegrab.downloader import DownloadStatus
 from tilegrab.tiles import TileIndex
+from tilegrab.tiles import Tile
 
 
 @dataclass(frozen=True, slots=True)
@@ -158,6 +159,13 @@ class ProgressStore:
         prog.append(d)
         self._flush_if_changed()
 
+    def progress_by_tile(self, item: Tile) -> Union[ProgressItem, None]:
+
+        prog = self._state.setdefault('progress', [])
+
+        for i, p in enumerate(prog):
+            if p['tileIndex'] == item:
+                return ProgressItem.from_dict(p)
 
     def suspend_flush(self):
         self._suspend_flush = True
@@ -165,3 +173,4 @@ class ProgressStore:
     def resume_flush(self):
         self._suspend_flush = False
         self._flush_if_changed()
+

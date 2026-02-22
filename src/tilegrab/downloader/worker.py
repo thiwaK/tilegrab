@@ -11,8 +11,11 @@ logger = logging.getLogger(__name__)
 
 class DownloadStatus(Enum):
     SUCCESS = 200
-    SKIP = 100
+    SKIP_AND_EXISTS = 100
+    SKIP = 101
     UNDEFINED = 900
+    ALREADY_EXISTS = 500
+    FAILED = 401
     EMPTY = 400
 
 @dataclass(frozen=True, slots=True)
