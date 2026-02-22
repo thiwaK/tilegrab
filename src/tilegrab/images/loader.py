@@ -34,5 +34,5 @@ def load_images(
                     images.append(img)
                 break
 
-    logger.info("Loaded %d images", len(images))
+    logger.info(f"Loaded {len(images)} images from {path}")
     return images

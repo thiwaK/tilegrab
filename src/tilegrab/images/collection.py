@@ -37,6 +37,9 @@ class TileImageCollection:
     def __getitem__(self, index):
         return self.images[index]
 
+    def __repr__(self) -> str:
+        return f"TileImageCollection; size={len(self)}; path={self.path}"
+
     def append(self, image: TileImage):
         self.images.append(image)
 

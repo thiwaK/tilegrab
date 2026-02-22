@@ -85,11 +85,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Only download tiles; do not run mosaicking or postprocessing",
     )
-    p.add_argument(
-        "--resume-download",
-        action="store_true",
-        help="Resume the previous download; do not overwrite",
-    )
+    # p.add_argument(
+    #     "--resume-download",
+    #     action="store_true",
+    #     help="Resume the previous download; do not overwrite",
+    # )
     p.add_argument(
         "--mosaic-only",
         action="store_true",
@@ -108,15 +108,15 @@ def parse_args() -> argparse.Namespace:
         "--workers", type=int, default=None, help="Max number of threads to use when parallel downloading"
     )
     p.add_argument(
-        "--parallel",
+        "--no-parallel",
         action=argparse.BooleanOptionalAction,
-        default=False, 
+        default=True, 
         help="Download tiles sequentially, no parallel downloading"
     )
     p.add_argument(
-        "--progress", 
+        "--no-progress", 
         action=argparse.BooleanOptionalAction,
-        default=False, 
+        default=True, 
         help="Hide tile download progress bar"
     )
     p.add_argument("--quiet", action="store_true", help="Hide all prints")
@@ -200,7 +200,7 @@ def main():
             tile_images = load_images(path=args.tiles_out, tiles=tile_collection)
             tile_image_collection = TileImageCollection(
                 path=args.tiles_out, images=tile_images)
-            logger.info(f"Load from disk result: {tile_image_collection}")
+            # logger.info(f"Load from disk result: {len(tile_image_collection)} TileImages")
         
         else:
             dl_config = DownloadConfig()
@@ -208,7 +208,7 @@ def main():
                 tile_collection=tile_collection,
                 config=dl_config,
                 tile_dir=args.tiles_out,
-                resume=args.resume_download)
+                resume=True) #TODO: Always resumes
     
             tile_image_collection = downloader.run(
                 workers=args.workers, 

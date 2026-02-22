@@ -1,6 +1,6 @@
-from enum import Enum
+from enum import IntEnum
 
-class DownloadStatus(Enum):
+class DownloadStatus(IntEnum):
     SUCCESS = 200
     SKIP_AND_EXISTS = 100
     SKIP = 101

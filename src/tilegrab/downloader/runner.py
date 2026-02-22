@@ -59,7 +59,7 @@ class Downloader:
             downloadStatus=download_result.status,
             tileURL=download_result.url,
             tileImagePath=self.tile_dir,
-            tileSourceId=self.tile_col.source_uid)
+            tileSourceId=self.tile_col.source_id)
 
         self.progress_store.upsert_by_tile_index(progress_item)
 
@@ -73,23 +73,24 @@ class Downloader:
 
         def session_factory(): return create_session(self.config)
 
-        
+        before_len = len(self.tile_col)
         for idx, tile in enumerate(self.tile_col):
             progress_item = self.progress_store.progress_by_tile(tile)
             if progress_item:
                 if progress_item.downloadStatus == DownloadStatus.SUCCESS and self.resume:
                     # skip this tile
                     self.tile_col[idx].need_download = False
+                    logger.debug(f"Skip downloading tile {tile}")
                 
                 if progress_item.downloadStatus == DownloadStatus.SKIP_AND_EXISTS and self.resume:
                     # skip this tile
                     self.tile_col[idx].need_download = False
-
-
+                    logger.debug(f"Skip downloading tile {tile}")
+        
         if show_progress:
             from tqdm import tqdm
             pbar = tqdm(total=len(self.tile_col),
-                        desc="Downloading", unit="tile")
+                        desc="       Downloading", unit="tile")
         else:
             pbar = None
 

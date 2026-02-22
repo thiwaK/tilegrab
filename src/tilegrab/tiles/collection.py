@@ -37,6 +37,7 @@ class TileCollection(ABC):
     def __init__(
             self, geo_dataset: GeoDataset, tile_source:TileSource , zoom: int, safe_limit: int = 250, invert_selection:bool = False):
         
+        self._tile_count = 0
         self.zoom = zoom
         self.safe_limit = safe_limit
         self.geo_dataset = geo_dataset
@@ -53,10 +54,9 @@ class TileCollection(ABC):
         self.build_tile_cache()
 
         if len(self) > safe_limit:
-            logger.error(f"Tile count exceeds safe limit: {len(self)} > {safe_limit}")
-            raise ValueError(
-                f"Your query excedes the hard limit {len(self)} > {safe_limit}"
-            )
+            logger.warning(f"Tile count exceeds the safe ({len(self)} > {safe_limit}). Only first {safe_limit} Tiles will be downloaded.")
+            self._cache = self._cache[0:safe_limit]
+            self._tile_count = safe_limit
 
         logger.info(f"TileCollection initialized with {len(self)} tiles")
 
@@ -65,20 +65,10 @@ class TileCollection(ABC):
     
     @property
     def to_list(self) -> List[Tile]:
-        cache = list(self._cache)
-        if cache is None or len(cache) < 1:
-            logger.debug("Building tile cache from to_list property")
-            self.build_tile_cache()
-            if len(self) > self.safe_limit:
-                logger.error(
-                    f"Tile count exceeds safe limit in to_list: {len(self)} > {self.safe_limit}"
-                )
-                raise ValueError("Too many tiles")
-        assert self._cache
         return list(self._cache)
     
     @property
-    def source_uid(self) -> str:
+    def source_id(self) -> str:
         return self.tile_source.id
     
     @property
