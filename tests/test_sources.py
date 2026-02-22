@@ -12,7 +12,7 @@ class TileSourceTest(unittest.TestCase):
         ]
 
     PROPERTY_ARR = {
-        "name", "description", "URL_TEMPLATE"
+        "name", "description", "url_template", "uid"
     }
 
     def test_property_arr_attributes_exist(self):
@@ -22,6 +22,7 @@ class TileSourceTest(unittest.TestCase):
                     has_attr_path(source, attr),
                     f"No attribute path `{attr}` on TileSource {source.name}"
                 )
+                assert getattr(source, attr) != ""
     
     def test_source_url_generation(self):
         for source in self.t_sources:

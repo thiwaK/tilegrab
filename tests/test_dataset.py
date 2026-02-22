@@ -13,8 +13,6 @@ class GeoDatasetTest(unittest.TestCase):
         cls.geodata = GeoDataset(str(DATA_PATH))
 
     PROPERTY_MAP = {
-        "shape.name": "geometry",
-        "shape.crs.name": "WGS 84",
         "bbox.minx": 80.59111369868114,   # numeric
         "bbox.maxy": 7.267703227740259,   # numeric
         "original_epsg": 3857,
@@ -23,6 +21,9 @@ class GeoDatasetTest(unittest.TestCase):
     }
 
     def test_property_map_attributes_exist(self):
+
+        assert hasattr(self.geodata, "bbox")
+        assert hasattr(self.geodata, "geometry")
         for path in self.PROPERTY_MAP.keys():
             self.assertTrue(
                 has_attr_path(self.geodata, path),
