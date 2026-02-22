@@ -1,4 +1,4 @@
-__version__ = "1.2.0b2"
+__version__ = "1.2.0b3"
 # from tilegrab import downloader
 # from tilegrab import sources
 # from tilegrab import mosaic

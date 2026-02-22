@@ -7,7 +7,7 @@ requires = [
 
 [project]
 name = "tilegrab"
-version = "1.2.0b2"
+version = "1.2.0b3"
 description = "Fast geospatial map tile downloader and mosaicker"
 readme = "README.md"
 authors = [
