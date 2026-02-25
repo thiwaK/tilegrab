@@ -15,12 +15,15 @@ def download_tile(
     session: requests.Session,
     timeout: float,
 ) -> DownloadResult:
+    
     x, y, z = tile.index.x, tile.index.y, tile.index.z
     url = tile.url
+    assert url != ""
     
     if not tile.need_download:
         logger.debug(f"Skipping tile: x={x}, y={y}, z={z}")
-        return DownloadResult(tile=tile, status=DownloadStatus.SKIP, result=None, url=url)
+        return DownloadResult(
+            tile=tile, status=DownloadStatus.SKIP, result=None, url=url)
     
     logger.debug(f"Downloading tile: x={x}, y={y}, z={z}")
     
@@ -30,16 +33,17 @@ def download_tile(
 
         content_type = resp.headers.get("content-type", "")
         if not content_type.startswith("image"):
-            raise ValueError(f"Unexpected content type: {content_type}")
+            raise RuntimeError(f"Unexpected content type: {content_type}")
 
         if not resp.content:
-            return DownloadResult(tile=tile, status=DownloadStatus.EMPTY, result=None, url=url)
+            return DownloadResult(
+                tile=tile, status=DownloadStatus.EMPTY, result=None, url=url)
 
         return DownloadResult(
             tile=tile, 
             status=DownloadStatus.SUCCESS, 
-            result=TileImage(tile=tile, image=resp.content), 
-            url=url)
+            result=TileImage(
+                tile=tile, image=resp.content), url=url)
 
     except requests.Timeout:
         logger.warning("Timeout fetching tile %s/%s/%s", z, x, y)

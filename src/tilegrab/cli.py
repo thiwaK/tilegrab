@@ -108,16 +108,16 @@ def parse_args() -> argparse.Namespace:
         "--workers", type=int, default=None, help="Max number of threads to use when parallel downloading"
     )
     p.add_argument(
-        "--no-parallel",
+        "--parallel",
         action=argparse.BooleanOptionalAction,
         default=True, 
-        help="Download tiles sequentially, no parallel downloading"
+        help="Download tiles sequentially/parallelly (default: parallel)"
     )
     p.add_argument(
-        "--no-progress", 
+        "--progress", 
         action=argparse.BooleanOptionalAction,
         default=True, 
-        help="Hide tile download progress bar"
+        help="Show/hide tile download progress bar (default: show)"
     )
     p.add_argument("--quiet", action="store_true", help="Hide all prints")
     p.add_argument("--debug", action="store_true", help="Enable debug logging")
@@ -212,8 +212,8 @@ def main():
     
             tile_image_collection = downloader.run(
                 workers=args.workers, 
-                show_progress=args.no_progress, 
-                parallel_download=args.no_parallel)
+                show_progress=args.progress, 
+                parallel_download=args.parallel)
             
             logger.info(f"Download result: {tile_image_collection}")
 
