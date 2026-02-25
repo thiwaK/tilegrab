@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+from tilegrab.dataset import Coordinate
 from tilegrab.sources.base import TileSource
 import shapely
 import math
@@ -13,12 +14,8 @@ class TileIndex:
     y: int
     z: int
 
-@dataclass(frozen=True, slots=True)
-class GeoBounds:
-    min_lon: float
-    min_lat: float
-    max_lon: float
-    max_lat: float
+    def __str__(self) -> str:
+        return f"{self.x=} {self.y=} {self.z=}"
 
 class Tile:
     """
@@ -51,16 +48,16 @@ class Tile:
         return self._index
 
     @property
-    def bounds(self) -> GeoBounds:
+    def bounds(self) -> Coordinate:
         return self._bounds
 
     @property
     def url(self) -> str:
         return self._url
     
-    def tile_bounds(self, x: int, y: int, z: int) -> GeoBounds:
+    def tile_bounds(self, x: int, y: int, z: int) -> Coordinate:
         """
-        Return GeoBounds of a Slippy Map tile.
+        Return Coordinate of a Slippy Map tile.
         x, y are tile indices at zoom z.
         """
         n = 2.0 ** z
@@ -77,7 +74,7 @@ class Tile:
         min_lat = tile_y_to_lat(y + 1)    # bottom edge
 
         
-        return GeoBounds(min_lat=min_lat, min_lon=min_lon, max_lat=max_lat, max_lon=max_lon)
+        return Coordinate(min_lat=min_lat, min_lon=min_lon, max_lat=max_lat, max_lon=max_lon)
 
     @property
     def geojson_bounds(self) -> dict:

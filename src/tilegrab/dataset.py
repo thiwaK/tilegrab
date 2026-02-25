@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 import logging
 from pathlib import Path
-from box import Box
 from typing import Union
 from functools import cache
 
@@ -9,19 +8,43 @@ logger = logging.getLogger(__name__)
 
 TILE_EPSG = 4326  # Web Mercator - 3857 | 4326 - WGS84
 
+@dataclass(frozen=True, slots=True)
+class Coordinate:
+    min_lon: float
+    min_lat: float
+    max_lon: float
+    max_lat: float
+    
+    @property
+    def minx(self):
+        return self.min_lon
+    
+    @property
+    def miny(self):
+        return self.min_lat
+    
+    @property
+    def maxx(self):
+        return self.max_lon
+    
+    @property
+    def maxy(self):
+        return self.max_lat
 
 class GeoDataset:
     @property
     @cache
-    def bbox(self):
+    def bbox(self) -> Coordinate:
+        # Lat=y Lon=X
         minx, miny, maxx, maxy = self.source.total_bounds
-        bbox_dict = Box(
-            {"minx": minx, "miny": miny, "maxx": maxx, "maxy": maxy}
-        )
+        # bbox_dict = Box(
+        #     {"minx": minx, "miny": miny, "maxx": maxx, "maxy": maxy}
+        # )
         logger.debug(
             f"Bbox calculated: minx={minx}, miny={miny}, maxx={maxx}, maxy={maxy}"
         )
-        return bbox_dict
+        
+        return Coordinate(*self.source.total_bounds)
 
     @property
     @cache
