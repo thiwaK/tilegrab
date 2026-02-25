@@ -3,7 +3,7 @@ from pathlib import Path
 import types
 from typing import Generator, Iterator, List, Union
 from PIL import Image
-from tilegrab.images import ImageCollectionBounds
+from tilegrab.dataset import Coordinate
 from tilegrab.images import ExportType
 
 logger = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ EPSG = 3857
 def export_image(
     images: Union[List[Image.Image], Iterator[Image.Image]],
     output_dir: Path,
-    bounds: ImageCollectionBounds,
+    bounds: Coordinate,
     formats: list[ExportType],
 ):
     
@@ -56,7 +56,7 @@ def export_image(
 
             width_px, height_px = img.size
 
-            transform = from_bounds(bounds.xmin, bounds.ymin, bounds.xmax, bounds.ymax, width_px, height_px)
+            transform = from_bounds(bounds.minx, bounds.miny, bounds.maxx, bounds.maxy, width_px, height_px)
 
             with rasterio.open(
                 output_path,
