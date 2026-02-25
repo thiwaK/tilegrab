@@ -7,3 +7,4 @@ class DownloadConfig:
     max_retries: int = 5
     backoff_factor: float = 0.3
     overwrite: bool = True
+    save_images: bool = True

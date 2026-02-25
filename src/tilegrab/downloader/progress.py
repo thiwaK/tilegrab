@@ -17,6 +17,7 @@ class ProgressItem:
     tileURL: str
     tileImagePath: Path
     tileSourceId: str
+    saved: bool
 
     @property
     def to_dict(self) -> Dict[str, Any]:
@@ -26,6 +27,7 @@ class ProgressItem:
             'tileURL': self.tileURL,
             'tileImagePath': str(self.tileImagePath),
             'tileSourceId': self.tileSourceId,
+            'saved': self.saved
         }
 
     @classmethod
@@ -37,6 +39,7 @@ class ProgressItem:
             tileURL=d['tileURL'],
             tileImagePath=Path(d['tileImagePath']),
             tileSourceId=d['tileSourceId'],
+            saved=d['saved']
         )
 
 class ProgressStore:
@@ -91,6 +94,7 @@ class ProgressStore:
 
 
     def _serialize(self) -> str:
+        
         return json.dumps(self._state, sort_keys=True)
 
     def _validate_item(self, item: Dict[str, Any]):

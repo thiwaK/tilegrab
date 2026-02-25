@@ -1,9 +1,11 @@
+import io
 import logging
 from dataclasses import dataclass
 from pathlib import Path, PosixPath, WindowsPath
 from typing import Any, Union
 from PIL import Image as PILImage
-from tilegrab.tiles import Tile, GeoBounds, TileIndex
+from tilegrab.dataset import Coordinate
+from tilegrab.tiles import Tile, TileIndex
 
 logger = logging.getLogger(__name__)
 
@@ -13,14 +15,18 @@ logger = logging.getLogger(__name__)
 class TileImage:
     width: int = 256
     height: int = 256
-    
+    format:str = "png"
 
-    def __init__(self, tile: Tile, image: Union[bytes, bytearray]) -> None:
+    def __init__(self, 
+            tile: Tile, 
+            image: Union[bytes, bytearray]) -> None:
         from io import BytesIO
 
+        assert tile.index.z and tile.index.y and tile.index.x
         self._tile = tile
         try:
             self._img = PILImage.open(BytesIO(image))
+            # self._img.load()
             logger.debug(
                 f"TileImage created for z={tile.index.z},x={tile.index.x},y={tile.index.y}")
         except Exception as e:
@@ -29,38 +35,17 @@ class TileImage:
                 exc_info=True,
             )
             logger.error(e)
-            raise
+            raise RuntimeError
 
         self._path: Union[Path, None] = None
-        self._ext: str = self._get_image_type(image)
 
     def __repr__(self) -> str:
         return f"TileImage; name={self.name}; path={self.path}; url={self.url}; position={self.index}"
 
-    def _get_image_type(self, data: Union[bytes, bytearray]) -> str:
-        b = bytes(data)
-
-        # PNG: 8 bytes
-        if b.startswith(b"\x89PNG\r\n\x1a\n"):
-            logger.debug(f"Image detected as PNG")
-            return "png"
-
-        # JPEG / JPG: files start with FF D8 and end with FF D9
-        if len(b) >= 2 and b[0:2] == b"\xff\xd8":
-            logger.debug(f"Image detected as JPG")
-            return "jpg"
-
-        # BMP: starts with 'BM' (0x42 0x4D)
-        if len(b) >= 2 and b[0:2] == b"BM":
-            logger.debug(f"Image detected as BMP")
-            return "bmp"
-
-        logger.warning(f"Unknown image format, defaulting to PNG")
-        return "png"
-
     def save(self):
         try:
-            self._img.save(self.path)
+            img_location = self.path / self.name
+            self._img.save(fp=img_location, format=self.format)
             logger.debug(f"Image saved to {self.path}")
         except Exception as e:
             logger.error(f"Failed to save image to {self.path}", exc_info=True)
@@ -68,7 +53,7 @@ class TileImage:
 
     @property
     def name(self) -> str:
-        return f"{self._tile.index.z}_{self._tile.index.x}_{self._tile.index.y}.{self._ext}"
+        return f"{self._tile.index.z}_{self._tile.index.x}_{self._tile.index.y}.{self.format}"
 
     @property
     def tile(self) -> Tile:
@@ -119,18 +104,15 @@ class TileImage:
 
     @property
     def extension(self) -> str:
-        if self._ext is None:
-            logger.error("Accessing extension for image without extension")
-            raise RuntimeError("Image does not have an extension")
-        return self._ext
+        return self.format
 
     @extension.setter
     def extension(self, val: str):
-        self._ext = val
+        self.format = val
         logger.debug(f"Image extension set to {val}")
 
     @property
-    def bounds(self) -> GeoBounds:
+    def bounds(self) -> Coordinate:
         return self._tile.bounds
     
     @property

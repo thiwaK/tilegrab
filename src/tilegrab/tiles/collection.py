@@ -21,7 +21,7 @@ class TileCollection(ABC):
     MIN_Y: float = 0
     MAX_Y: float = 0
     _cache: List[Tile]
-    _tile_count: int = 0
+    _tile_count: int = 0 # recursion depth monkey patch
 
 
     def __len__(self):
@@ -74,7 +74,6 @@ class TileCollection(ABC):
     @property
     def source_name(self) -> str:
         return self.tile_source.name or ""
-
 
     @abstractmethod
     def build_tile_cache(self) -> List[Tile]:
