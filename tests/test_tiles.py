@@ -6,6 +6,8 @@ from tilegrab.tiles import TilesByBBox, TilesByShape
 from tilegrab.dataset import GeoDataset
 from shapely.geometry import Polygon
 
+from tilegrab.tiles.tile import TileIndex
+
 class TileTest(unittest.TestCase):
     
     @classmethod
@@ -20,6 +22,12 @@ class TileTest(unittest.TestCase):
 
         cls.mock_ds.bbox = cls.bbox
         cls.mock_ds.geometry.geometry = cls.shape
+
+    def test_tile_index_initiation(self):
+        t = TileIndex(z=10, x=1, y=2)
+        assert t.x == 1
+        assert t.y == 2
+        assert t.z == 10
 
     def test_tiles_by_bbox_creation(self):
 
